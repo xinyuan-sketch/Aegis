@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}API Key 管理 · Aegis{% endblock %}
+{% block content %}
+<div class="page-head"><h1>API Key 管理</h1></div>
+<p style="color:var(--muted);font-size:13px;margin-bottom:18px">服务端共享 Key，Fernet 加密存储，全团队查询时共用。Telegram 用于事件通知（权限申请等）。</p>
+
+<div class="grid grid-2">
+  {% for key, name, extra_label in providers %}
+  {% set row = configured.get(key) %}
+  <form class="card" method="post" action="{{ url_for('admin.apikeys') }}" style="--c: {{ 'var(--c-green)' if row and row.is_valid else 'var(--c-red)' if row else 'var(--brand)' }}">
+    <input type="hidden" name="provider" value="{{ key }}">
+    <div class="card-top">
+      <span class="card-label"><svg class="ico"><use href="#i-key"/></svg>{{ name }}</span>
+      {% if row %}<span class="badge {{ 'badge-on' if row.is_valid else 'badge-off' }}">{{ '有效' if row.is_valid else '待验证' }}</span>
+      {% else %}<span class="badge badge-warn">未配置</span>{% endif %}
+    </div>
+    <label class="card-label">{{ 'Bot Token' if key == 'telegram' else 'API Key' }}</label>
+    <input name="key" type="password" placeholder="{{ '已配置，重填以更新' if row else '粘贴 ' + ('Bot Token' if key=='telegram' else 'API Key') }}" style="margin:6px 0 10px">
+    {% if extra_label %}
+    <label class="card-label">{{ extra_label }}</label>
+    <input name="extra" placeholder="{{ extra_label }}" style="margin:6px 0 10px">
+    {% endif %}
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <span style="color:var(--dim);font-size:12px">{% if row %}更新于 {{ row.updated_at.strftime('%m-%d %H:%M') }}{% endif %}</span>
+      <div style="display:flex;gap:8px">
+        {% if key == 'telegram' %}<button class="ghost" formaction="{{ url_for('admin.notify_test') }}" formmethod="post">测试推送</button>{% endif %}
+        <button type="submit">保存</button>
+      </div>
+    </div>
+  </form>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}仪表盘 · Aegis{% endblock %}
+{% block toolnav %}
+  {% if tools %}
+  <div class="nav-group">工具</div>
+  {% for t in tools %}
+  <a href="#"><svg class="ico"><use href="#i-{{ t.icon }}"/></svg>{{ t.name }}</a>
+  {% endfor %}
+  {% endif %}
+{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="page-head"><h1>仪表盘</h1><span class="live"><i></i>LIVE</span></div>
+  <div style="color:var(--muted);font-size:13px">积分 <b style="color:var(--c-cyan);font-size:15px" data-k="credits">—</b></div>
+</div>
+
+<!-- 概览统计 -->
+<div class="grid grid-4">
+  <div class="card" style="--c:var(--c-green)">
+    <div class="card-top"><span class="card-label"><svg class="ico"><use href="#i-dash"/></svg>今日操作</span></div>
+    <div class="stat-num" data-count data-k="today_ops">0</div>
+    <div class="stat-sub">累计 <span data-k="total_ops">0</span> 次</div>
+  </div>
+  <div class="card" style="--c:var(--c-blue)">
+    <div class="card-top"><span class="card-label"><svg class="ico"><use href="#i-users"/></svg>今日登录</span></div>
+    <div class="stat-num" data-count data-k="today_logins">0</div>
+    <div class="stat-sub">累计 <span data-k="total_logins">0</span> 次</div>
+  </div>
+  <div class="card" style="--c:var(--c-orange)">
+    <div class="card-top"><span class="card-label"><svg class="ico"><use href="#i-users"/></svg>用户</span></div>
+    <div class="stat-num" data-count data-k="users_total">0</div>
+    <div class="stat-sub"><span data-k="users_active">0</span> 活跃</div>
+  </div>
+  <div class="card" style="--c:var(--c-purple)">
+    <div class="card-top"><span class="card-label"><svg class="ico"><use href="#i-clock"/></svg>运行</span></div>
+    <div class="stat-num" data-k="app_uptime" style="font-size:26px">—</div>
+    <div class="stat-sub" data-k="py_version">—</div>
+  </div>
+</div>
+
+<!-- 工具真实指标 -->
+<div class="section-title">工具</div>
+<div class="grid grid-4">
+  <div class="card" style="--c:var(--c-red)">
+    <div class="card-top"><span class="card-label"><svg class="ico"><use href="#i-search"/></svg>Hunter</span><span class="badge badge-warn" data-badge="hunter_on">未配置</span></div>
+    <div class="stat-num" data-count data-k="hunter_count">0</div><div class="stat-sub">累计查询</div>
+  </div>
+  <div class="card" style="--c:var(--c-orange)">
+    <div class="card-top"><span class="card-label"><svg class="ico"><use href="#i-compass"/></svg>FOFA</span><span class="badge badge-warn" data-badge="fofa_on">未配置</span></div>
+    <div class="stat-num" data-count data-k="fofa_count">0</div><div class="stat-sub">累计查询</div>
+  </div>
+  <div class="card" style="--c:var(--c-blue)">
+    <div class="card-top"><span class="card-label"><svg class="ico"><use href="#i-compass"/></svg>Shodan</span><span class="badge badge-warn" data-badge="shodan_on">未配置</span></div>
+    <div class="stat-num" data-count data-k="shodan_count">0</div><div class="stat-sub">累计查询</div>
+  </div>
+  <div class="card" style="--c:var(--c-cyan)">
+    <div class="card-top"><span class="card-label"><svg class="ico"><use href="#i-key"/></svg>共享凭证</span><span class="badge badge-info">就绪</span></div>
+    <div class="stat-num" data-count data-k="vault_count">0</div><div class="stat-sub"><span data-k="vault_expiring">0</span> 个即将到期</div>
+  </div>
+</div>
+
+<div class="grid grid-4" style="margin-top:14px">
+  <div class="card" style="--c:var(--c-green)">
+    <div class="card-top"><span class="card-label"><svg class="ico"><use href="#i-hash"/></svg>Hash 破解</span><span class="badge badge-info">离线字典</span></div>
+    <div class="stat-num" data-count data-k="hash_found">0</div><div class="stat-sub">已破解 / 累计 <span data-k="hash_total">0</span></div>
+  </div>
+  <div class="card" style="--c:var(--c-purple)">
+    <div class="card-top"><span class="card-label"><svg class="ico"><use href="#i-compass"/></svg>安全导航</span></div>
+    <div class="stat-num" data-count data-k="nav_clicks">0</div><div class="stat-sub"><span data-k="nav_links">0</span> 个链接 · 累计点击</div>
+  </div>
+  <div class="card" style="--c:var(--c-blue)">
+    <div class="card-top"><span class="card-label"><svg class="ico"><use href="#i-download"/></svg>下载中心</span></div>
+    <div class="stat-num" data-count data-k="dl_files">0</div><div class="stat-sub">共 <span data-k="dl_size">0</span> · 文件数</div>
+  </div>
+  <div class="card" style="--c:var(--c-orange)">
+    <div class="card-top"><span class="card-label"><svg class="ico"><use href="#i-lock"/></svg>待审批</span></div>
+    <div class="stat-num" data-count data-k="pending_reqs">0</div><div class="stat-sub">权限申请待处理</div>
+  </div>
+</div>
+
+<!-- 服务器状态 -->
+<div class="panel">
+  <div class="panel-head">
+    <h3><svg class="ico" style="width:17px;height:17px;color:var(--c-cyan)"><use href="#i-monitor"/></svg> 服务器状态</h3>
+    <div class="tags"><span class="tag tag-os" data-k="os_name">—</span><span class="tag" data-k="os_pretty">—</span><span data-k="uptime">运行时间 —</span></div>
+  </div>
+  <div class="sys-grid">
+    <!-- CPU -->
+    <div class="sys-cell">
+      <div class="sys-title"><span><svg class="ico" style="width:14px;height:14px;vertical-align:-2px;color:var(--c-blue)"><use href="#i-cpu"/></svg> CPU</span><span data-k="cpu_avg" style="color:var(--text)">—</span></div>
+      <div class="cores" id="cpu-cores"><div style="color:var(--dim);font-size:12px">采集中…</div></div>
+    </div>
+    <!-- 内存 -->
+    <div class="sys-cell">
+      <div class="sys-title"><span><svg class="ico" style="width:14px;height:14px;vertical-align:-2px;color:var(--c-orange)"><use href="#i-mem"/></svg> 内存</span><span data-k="mem_total" style="color:var(--text)">—</span></div>
+      <div class="donut" id="mem-donut" style="--c:var(--c-orange)"><span class="donut-val" data-k="mem_pct">—</span></div>
+      <div class="legend">
+        <span><i style="background:var(--c-orange)"></i>已用 <b data-k="mem_used" style="color:var(--text);margin-left:4px">—</b></span>
+        <span><i style="background:rgba(255,255,255,.18)"></i>空闲 <b data-k="mem_free" style="color:var(--text);margin-left:4px">—</b></span>
+      </div>
+    </div>
+    <!-- 网络 -->
+    <div class="sys-cell">
+      <div class="sys-title"><span><svg class="ico" style="width:14px;height:14px;vertical-align:-2px;color:var(--c-green)"><use href="#i-net"/></svg> 网络</span></div>
+      <svg id="net-spark" viewBox="0 0 100 34" preserveAspectRatio="none" style="width:100%;height:40px;margin:2px 0 8px;overflow:visible">
+        <polyline id="spark-down" points="" style="fill:none;stroke:var(--c-blue);stroke-width:1.6;vector-effect:non-scaling-stroke"/>
+        <polyline id="spark-up" points="" style="fill:none;stroke:var(--c-green);stroke-width:1.6;vector-effect:non-scaling-stroke"/>
+      </svg>
+      <div class="net-row"><span class="lab"><svg class="ico" style="width:13px;height:13px;color:var(--c-green)"><use href="#i-download"/></svg>上传</span><span class="val up" data-k="net_up">—</span></div>
+      <div class="net-row"><span class="lab"><svg class="ico" style="width:13px;height:13px;color:var(--c-blue);transform:rotate(180deg)"><use href="#i-download"/></svg>下载</span><span class="val down" data-k="net_down">—</span></div>
+    </div>
+    <!-- 磁盘 -->
+    <div class="sys-cell">
+      <div class="sys-title"><span><svg class="ico" style="width:14px;height:14px;vertical-align:-2px;color:var(--c-purple)"><use href="#i-disk"/></svg> 磁盘</span><span data-k="disk_fs" style="color:var(--text)">—</span></div>
+      <div class="donut" id="disk-donut" style="--c:var(--c-purple)"><span class="donut-val" data-k="disk_pct">—</span></div>
+      <div class="legend">
+        <span><i style="background:var(--c-purple)"></i>已用 <b data-k="disk_used" style="color:var(--text);margin-left:4px">—</b></span>
+        <span><i style="background:rgba(255,255,255,.18)"></i>总量 <b data-k="disk_total" style="color:var(--text);margin-left:4px">—</b></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 消耗排行 -->
+<div class="panel">
+  <div class="panel-head"><h3>积分消耗排行 <span style="color:var(--dim);font-size:12px">TOP 10</span></h3></div>
+  <div class="rank-list" id="rank-list"><div style="color:var(--dim);font-size:12px">加载中…</div></div>
+</div>
+
+{% if not tools %}
+<div class="empty-hint">你当前没有可用工具。功能模块将在后续里程碑接入；需要使用时可向管理员申请授权。</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+const $ = (k) => document.querySelector(`[data-k="${k}"]`);
+const setK = (k, v) => { const el = $(k); if (el) el.textContent = v; };
+const esc = (s) => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function countUp(el, target) {
+  const start = parseFloat(el.textContent.replace(/,/g,'')) || 0;
+  const dur = 600, t0 = performance.now();
+  function step(now) {
+    const p = Math.min(1, (now - t0) / dur);
+    const val = Math.round(start + (target - start) * (1 - Math.pow(1 - p, 3)));
+    el.textContent = val.toLocaleString();
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+async function loadStats() {
+  try {
+    const d = await (await fetch("{{ url_for('dashboard.stats') }}")).json();
+    setK('credits', (d.credits ?? 0).toLocaleString());
+    document.querySelectorAll('[data-count]').forEach(el => {
+      const k = el.getAttribute('data-k'); if (d[k] != null) countUp(el, d[k]);
+    });
+    ['total_ops','total_logins','users_active','tools_count','hash_total','nav_links','vault_expiring'].forEach(k => { if (d[k]!=null) setK(k, d[k].toLocaleString()); });
+    if (d.dl_size != null) setK('dl_size', d.dl_size);
+    document.querySelectorAll('[data-badge]').forEach(b => {
+      const on = d[b.getAttribute('data-badge')];
+      b.textContent = on ? '已配置' : '未配置';
+      b.className = 'badge ' + (on ? 'badge-on' : 'badge-warn');
+    });
+    // 排行
+    const rl = document.getElementById('rank-list');
+    if (d.ranking && d.ranking.length) {
+      const max = Math.max(...d.ranking.map(r => r.value), 1);
+      rl.innerHTML = d.ranking.map((r,i) => `
+        <div class="rank-item"><span class="rank-no">${i+1}</span>
+          <span class="rank-name">${esc(r.name)}</span>
+          <span class="rank-bar"><span style="width:${Math.round(r.value/max*100)}%"></span></span>
+          <span class="rank-val">${r.value.toLocaleString()}</span></div>`).join('');
+    } else { rl.innerHTML = '<div style="color:var(--dim);font-size:12px">暂无消耗记录</div>'; }
+  } catch (e) {}
+}
+
+const coreColor = p => p < 50 ? 'var(--c-green)' : (p < 85 ? 'var(--c-orange)' : 'var(--c-red)');
+const netHist = { up: [], down: [] };
+function pushNet(up, down) {
+  netHist.up.push(up); netHist.down.push(down);
+  if (netHist.up.length > 40) { netHist.up.shift(); netHist.down.shift(); }
+  const max = Math.max(1, ...netHist.up, ...netHist.down);
+  const n = netHist.up.length, W = 100, H = 32;
+  const pts = arr => arr.map((v, i) => `${(i / Math.max(n - 1, 1) * W).toFixed(1)},${(H - v / max * H + 1).toFixed(1)}`).join(' ');
+  document.getElementById('spark-up').setAttribute('points', pts(netHist.up));
+  document.getElementById('spark-down').setAttribute('points', pts(netHist.down));
+}
+
+async function loadSystem() {
+  let d;
+  try { d = await (await fetch("{{ url_for('dashboard.system') }}")).json(); }
+  catch (e) { return; }              // 拉取失败：保留上次数据，不清空
+  if (!d || d.error) return;
+  setK('os_name', d.os_name); setK('os_pretty', d.os_pretty); setK('uptime', '运行时间 ' + d.uptime_str);
+  setK('app_uptime', d.app_uptime_str); setK('py_version', 'Python ' + d.py_version);
+  // CPU（核心条按负载变色）
+  setK('cpu_avg', d.cpu_avg + '%');
+  document.getElementById('cpu-cores').innerHTML = d.cpu.map((p, i) => `
+    <div class="core"><span style="width:22px">#${i}</span>
+      <span class="core-bar"><span style="width:${p}%;background:${coreColor(p)}"></span></span>
+      <span class="core-val">${p}%</span></div>`).join('');
+  // 内存
+  setK('mem_total', d.mem.total_gb + ' G'); setK('mem_pct', d.mem.percent + '%');
+  setK('mem_used', d.mem.used_gb + ' G'); setK('mem_free', d.mem.free_gb + ' G');
+  document.getElementById('mem-donut').style.setProperty('--p', d.mem.percent);
+  // 网络（数值 + 折线）
+  setK('net_up', d.net.up); setK('net_down', d.net.down);
+  pushNet(d.net.up_bps || 0, d.net.down_bps || 0);
+  // 磁盘
+  setK('disk_fs', d.disk.fs); setK('disk_pct', d.disk.percent + '%');
+  setK('disk_used', d.disk.used_gb + ' G'); setK('disk_total', d.disk.total_gb + ' G');
+  document.getElementById('disk-donut').style.setProperty('--p', d.disk.percent);
+}
+
+loadStats(); loadSystem();
+setInterval(loadStats, 6000);
+setInterval(loadSystem, 2000);
+</script>
+{% endblock %}

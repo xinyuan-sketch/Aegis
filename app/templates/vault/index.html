@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% from '_pagination.html' import pager %}
+{% block title %}共享凭证 · Aegis{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="page-head"><h1>共享凭证</h1></div>
+  <div style="display:flex;gap:10px">
+    <a class="btn ghost" href="{{ url_for('vault.export_csv') }}">导出 CSV</a>
+    <button onclick="document.getElementById('new-form').classList.toggle('hidden')">+ 新增凭证</button>
+  </div>
+</div>
+
+<form id="new-form" class="panel hidden" method="post" action="{{ url_for('vault.create') }}" style="margin-top:0">
+  <div class="grid grid-2" style="margin-bottom:12px">
+    <div><label class="card-label">名称 *</label><input name="title" placeholder="如：测试环境后台" required></div>
+    <div><label class="card-label">类型</label>
+      <select name="ctype">{% for k, v in types %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+    <div><label class="card-label">账号 / 标识</label><input name="username" placeholder="用户名 / key id（明文）"></div>
+    <div><label class="card-label">密钥 / 密码 *</label><input name="secret" placeholder="将加密存储" required></div>
+    <div><label class="card-label">URL</label><input name="url" placeholder="https://"></div>
+    <div><label class="card-label">到期日（可选）</label><input name="expires_at" type="date"></div>
+  </div>
+  <label class="card-label">备注</label><textarea name="note" rows="2"></textarea>
+  <div style="display:flex;align-items:center;gap:16px;margin-top:12px">
+    <label class="trust" style="color:var(--muted)"><input type="checkbox" name="visibility" value="public"> 公开（全团队可见）</label>
+    <button type="submit">保存</button>
+  </div>
+</form>
+
+<div class="grid grid-4" style="margin-top:16px">
+  {% for c in creds %}
+  <div class="card" style="--c: {{ 'var(--c-cyan)' if c.visibility=='public' else 'var(--c-purple)' }}">
+    <div class="card-top">
+      <span class="card-label"><svg class="ico"><use href="#i-key"/></svg>{{ type_map.get(c.ctype, c.ctype) }}</span>
+      <span class="badge {{ 'badge-info' if c.visibility=='public' else 'badge-warn' }}">{{ '公开' if c.visibility=='public' else '私密' }}</span>
+    </div>
+    <div style="font-weight:600;font-size:15px;margin-bottom:4px">{{ c.title }}</div>
+    {% if c.username %}<div class="stat-sub" style="margin-top:0">账号：{{ c.username }}</div>{% endif %}
+    <div style="display:flex;align-items:center;gap:8px;margin:10px 0 4px">
+      <code class="secret" data-id="{{ c.id }}" style="flex:1;font-family:ui-monospace,monospace;font-size:13px;color:var(--muted);background:rgba(255,255,255,.04);padding:6px 9px;border-radius:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">••••••••</code>
+      <button class="ghost btn-reveal" data-id="{{ c.id }}" style="padding:6px 10px;font-size:12px">复制</button>
+    </div>
+    {% if c.url %}<div class="stat-sub"><a href="{{ c.url }}" target="_blank" rel="noreferrer" style="color:var(--c-blue)">{{ c.url }}</a></div>{% endif %}
+    {% if c.is_expiring %}<div class="badge badge-off" style="margin-top:8px;display:inline-block">⚠ {{ c.expires_at.strftime('%m-%d') }} 到期</div>{% endif %}
+    {% if current_user.is_admin or c.owner_id == current_user.id %}
+    <form method="post" action="{{ url_for('vault.delete', cid=c.id) }}" style="margin-top:10px" onsubmit="return confirm('确认删除？')">
+      <button class="danger" style="padding:5px 10px;font-size:12px">删除</button>
+    </form>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="empty-hint" style="grid-column:1/-1">还没有凭证。点右上角「新增凭证」添加，敏感值将加密存储。</div>
+  {% endfor %}
+</div>
+{{ pager(pg, 'vault.index') }}
+{% endblock %}
+
+{% block scripts %}
+<style>.hidden{display:none!important}</style>
+<script>
+document.querySelectorAll('.btn-reveal').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const id = btn.dataset.id;
+    const code = document.querySelector(`.secret[data-id="${id}"]`);
+    try {
+      const r = await fetch(`/tools/vault/${id}/reveal`, {method:'POST'});
+      const d = await r.json();
+      if (d.error) { btn.textContent = '失败'; return; }
+      code.textContent = d.secret;
+      code.style.color = 'var(--text)';
+      await navigator.clipboard.writeText(d.secret).catch(()=>{});
+      btn.textContent = '已复制';
+      setTimeout(() => { code.textContent = '••••••••'; code.style.color = 'var(--muted)'; btn.textContent = '复制'; }, 3000);
+    } catch (e) { btn.textContent = '失败'; }
+  });
+});
+</script>
+{% endblock %}

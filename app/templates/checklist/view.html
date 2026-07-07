@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}{{ c.title }} · {{ site_name or 'Aegis' }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="page-head"><h1 style="font-size:22px">{{ c.title }}</h1></div>
+  <a href="{{ url_for('checklist.index') }}" class="stat-sub">← 返回列表</a>
+</div>
+
+<div class="cl-head">
+  {% if c.visibility == 'public' %}<span class="badge badge-on">团队共享</span>{% else %}<span class="badge badge-off">私密</span>{% endif %}
+  <span class="stat-sub">{{ owner.username if owner else '' }}</span>
+  <div class="cl-prog"><div class="cl-bar"><span id="cl-fill" style="width:{{ pct }}%"></span></div><span id="cl-count">{{ done }}/{{ total }}</span></div>
+  {% if editable %}
+  <form method="post" action="{{ url_for('checklist.delete', cid=c.id) }}" style="margin-left:8px" onsubmit="return confirm('删除整个清单？')"><button class="danger" style="padding:6px 12px;font-size:13px">删除清单</button></form>
+  {% endif %}
+</div>
+
+<div class="panel">
+  <ul class="cl-items">
+    {% for it in c.items %}
+    <li class="cl-item {{ 'done' if it.done }}" data-id="{{ it.id }}">
+      {% if editable %}
+      <input type="checkbox" class="cl-check" {{ 'checked' if it.done }} data-id="{{ it.id }}">
+      {% else %}
+      <span class="cl-dot">{{ '✓' if it.done else '' }}</span>
+      {% endif %}
+      <span class="cl-text">{{ it.text }}</span>
+      {% if editable %}
+      <form method="post" action="{{ url_for('checklist.delete_item', item_id=it.id) }}" class="cl-del"><button title="删除">×</button></form>
+      {% endif %}
+    </li>
+    {% else %}
+    <li class="stat-sub" style="list-style:none">暂无条目。</li>
+    {% endfor %}
+  </ul>
+
+  {% if editable %}
+  <form method="post" action="{{ url_for('checklist.add_item', cid=c.id) }}" class="cl-add">
+    <input name="text" placeholder="添加一项…" required style="flex:1">
+    <button type="submit">添加</button>
+  </form>
+  {% endif %}
+</div>
+
+<style>
+.cl-head { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+.cl-prog { display:flex; align-items:center; gap:10px; margin-left:auto; }
+.cl-prog .cl-bar { width:160px; height:8px; border-radius:4px; background:var(--inset); overflow:hidden; }
+.cl-prog .cl-bar span { display:block; height:100%; background:linear-gradient(90deg,var(--c-green),var(--c-cyan)); transition:width .3s; }
+.cl-prog #cl-count { color:var(--muted); font-size:13px; }
+.cl-items { list-style:none; margin:0; padding:0; }
+.cl-item { display:flex; align-items:center; gap:12px; padding:11px 6px; border-bottom:1px solid var(--line); }
+.cl-item:last-child { border-bottom:0; }
+.cl-check { width:18px; height:18px; flex:0 0 auto; cursor:pointer; }
+.cl-dot { width:18px; text-align:center; color:var(--c-green); }
+.cl-text { flex:1; color:var(--text); font-size:14px; }
+.cl-item.done .cl-text { color:var(--dim); text-decoration:line-through; }
+.cl-del { margin-left:auto; }
+.cl-del button { background:none; border:0; color:var(--dim); font-size:18px; cursor:pointer; padding:0 6px; }
+.cl-del button:hover { color:var(--c-red); }
+.cl-add { display:flex; gap:10px; margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
+</style>
+<script>
+document.querySelectorAll('.cl-check').forEach(cb=>cb.addEventListener('change',function(){
+  const id=this.getAttribute('data-id'), li=this.closest('.cl-item');
+  fetch('{{ url_for("checklist.toggle_item", item_id=0) }}'.replace('/0/','/'+id+'/'),{method:'POST'})
+    .then(r=>r.json()).then(d=>{
+      li.classList.toggle('done', d.done);
+      document.getElementById('cl-fill').style.width=d.pct+'%';
+      document.getElementById('cl-count').textContent=d.count;
+    }).catch(()=>{ this.checked=!this.checked; });
+}));
+</script>
+{% endblock %}

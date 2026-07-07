@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}工具设置 · Aegis{% endblock %}
+{% block content %}
+<div class="page-head"><h1>工具设置</h1></div>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">调整侧边栏显示名、图标、排序与单次积分消耗；可停用未上线的工具。</p>
+
+<table class="data-table">
+  <thead><tr><th>Key</th><th>名称</th><th>图标</th><th>排序</th><th>积分</th><th>状态</th><th>操作</th></tr></thead>
+  <tbody>
+  {% for t in tools %}
+  <tr>
+    <form method="post" action="{{ url_for('admin.tools_settings') }}">
+      <input type="hidden" name="tool_id" value="{{ t.id }}">
+      <td><code style="color:var(--muted)">{{ t.key }}</code></td>
+      <td><input name="name" value="{{ t.name }}" style="width:130px;padding:5px 8px"></td>
+      <td><input name="icon" value="{{ t.icon }}" style="width:90px;padding:5px 8px"></td>
+      <td><input name="sort_order" type="number" value="{{ t.sort_order }}" style="width:64px;padding:5px 8px"></td>
+      <td><input name="cost" type="number" value="{{ t.cost }}" style="width:64px;padding:5px 8px"></td>
+      <td>{% if t.is_enabled %}<span class="badge badge-on">启用</span>{% else %}<span class="badge badge-off">停用</span>{% endif %}</td>
+      <td class="ops">
+        <button type="submit" style="padding:5px 10px;font-size:12px">保存</button>
+    </form>
+        <form method="post" action="{{ url_for('admin.tools_settings') }}">
+          <input type="hidden" name="tool_id" value="{{ t.id }}">
+          <input type="hidden" name="action" value="toggle">
+          <button class="{{ 'danger' if t.is_enabled else 'ghost' }}" style="padding:5px 10px;font-size:12px">{{ '停用' if t.is_enabled else '启用' }}</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

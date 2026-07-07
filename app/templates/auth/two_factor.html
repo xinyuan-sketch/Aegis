@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}二次验证 · Aegis{% endblock %}
+{% block content_full %}
+<div class="login-wrap">
+  <form class="login-card" method="post" action="{{ url_for('auth.two_factor') }}">
+    <div class="login-logo">A</div>
+    <h1>二次验证</h1>
+    <p class="sub">请输入验证器 App 中的 6 位动态码</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}<div class="flash flash-{{ cat }}">{{ msg }}</div>{% endfor %}
+    {% endwith %}
+    <input name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" autofocus required
+           placeholder="6 位验证码" style="text-align:center;letter-spacing:8px;font-size:20px;font-family:ui-monospace,monospace">
+    <button type="submit">验 证</button>
+    <a href="{{ url_for('auth.login') }}" style="text-align:center;color:var(--muted);font-size:13px">返回登录</a>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}渗透清单 · {{ site_name or 'Aegis' }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="page-head"><h1>渗透清单</h1></div>
+  <button onclick="document.getElementById('new-cl').classList.toggle('hidden')">+ 新建清单</button>
+</div>
+
+<form id="new-cl" class="panel hidden" method="post" action="{{ url_for('checklist.new') }}" style="margin-bottom:16px">
+  <div class="grid grid-2">
+    <div><label class="card-label">标题（留空则用模板名）</label><input name="title" placeholder="如：某某项目 Web 测试"></div>
+    <div><label class="card-label">套用模板</label>
+      <select name="template">
+        <option value="">空白清单</option>
+        {% for key, tpl in templates.items() %}<option value="{{ key }}">{{ tpl[0] }}（{{ tpl[1]|length }} 项）</option>{% endfor %}
+      </select>
+    </div>
+  </div>
+  <label class="trust" style="color:var(--muted);margin-top:12px"><input type="checkbox" name="visibility" value="public"> 团队共享</label>
+  <div style="margin-top:14px"><button type="submit">创建</button></div>
+</form>
+
+{% if data %}
+<div class="grid grid-3">
+  {% for c, done, total, pct in data %}
+  <a class="card cl-card" href="{{ url_for('checklist.view', cid=c.id) }}" style="--c:var(--c-green)">
+    <div class="card-top">
+      <span class="card-label" style="font-size:15px;color:var(--text)">{{ c.title }}</span>
+      {% if c.visibility == 'public' %}<span class="badge badge-on">共享</span>{% endif %}
+    </div>
+    <div class="cl-bar"><span style="width:{{ pct }}%"></span></div>
+    <div class="cl-meta"><span>{{ done }}/{{ total }} 完成</span><span class="cl-pct">{{ pct }}%</span></div>
+    <div class="stat-sub" style="font-size:11.5px">{{ owners.get(c.owner_id, '') }} · {{ c.created_at.strftime('%Y-%m-%d') }}</div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-hint">还没有清单。可从内置方法论模板（Web 渗透 / 外网信息收集 / 内网渗透）快速创建。</div>
+{% endif %}
+
+<style>
+.cl-card { display:flex; flex-direction:column; gap:9px; text-decoration:none; }
+.cl-bar { height:7px; border-radius:4px; background:var(--inset); overflow:hidden; }
+.cl-bar span { display:block; height:100%; background:linear-gradient(90deg,var(--c-green),var(--c-cyan)); }
+.cl-meta { display:flex; justify-content:space-between; font-size:12.5px; color:var(--muted); }
+.cl-pct { color:var(--c-green); font-weight:600; }
+</style>
+{% endblock %}

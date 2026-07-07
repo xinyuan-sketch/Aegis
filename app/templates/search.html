@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}搜索 · {{ site_name or 'Aegis' }}{% endblock %}
+{% block content %}
+<div class="topbar"><div class="page-head"><h1>全局搜索</h1></div></div>
+
+<form class="panel" method="get" action="{{ url_for('search.index') }}" style="display:flex;gap:10px;align-items:center">
+  <svg class="ico" style="width:18px;height:18px;color:var(--muted)"><use href="#i-search"/></svg>
+  <input name="q" value="{{ q }}" placeholder="搜索笔记、片段、清单、凭证、导航…" autofocus style="flex:1;border:0;background:transparent;font-size:15px">
+  <button type="submit">搜索</button>
+</form>
+
+{% if q %}
+<div class="stat-sub" style="margin:12px 2px">找到 {{ total }} 条与「{{ q }}」相关的结果</div>
+{% for label, icon, items in groups %}
+  {% if items %}
+  <div class="panel">
+    <div class="panel-head"><h3><svg class="ico" style="width:15px;height:15px;color:var(--c-cyan)"><use href="#i-{{ icon }}"/></svg> {{ label }} <span style="color:var(--dim);font-size:12px">{{ items|length }}</span></h3></div>
+    <div class="sr-list">
+      {% for it in items %}
+      <a class="sr-item" href="{{ it.url }}" {{ 'target=_blank rel=noopener' if it.external }}>
+        <span class="sr-title">{{ it.title }}</span>
+        <span class="sr-sub">{{ it.sub }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+{% endfor %}
+{% if total == 0 %}<div class="empty-hint">没有找到匹配的结果，换个关键词试试。</div>{% endif %}
+{% else %}
+<div class="empty-hint">输入关键词，一次搜遍你的笔记、代码片段、清单、凭证与导航。</div>
+{% endif %}
+
+<style>
+.sr-list { display:flex; flex-direction:column; }
+.sr-item { display:flex; flex-direction:column; gap:3px; padding:10px 8px; border-bottom:1px solid var(--line); text-decoration:none; border-radius:8px; }
+.sr-item:last-child { border-bottom:0; }
+.sr-item:hover { background:var(--panel-hover); }
+.sr-title { color:var(--text); font-size:14px; font-weight:500; }
+.sr-sub { color:var(--muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+</style>
+{% endblock %}

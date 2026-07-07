@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}OSINT 查询 · Aegis{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="page-head"><h1>OSINT 查询</h1></div>
+  <div style="color:var(--muted);font-size:13px">单次消耗 <b style="color:var(--c-orange)">{{ cost }}</b> 积分（缓存命中免费）</div>
+</div>
+
+<div class="panel" style="margin-top:0">
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+    <div>
+      <label class="card-label">查询引擎</label>
+      <select id="provider">
+        <option value="fofa">FOFA</option>
+        <option value="hunter">Hunter</option>
+        <option value="shodan">Shodan</option>
+      </select>
+    </div>
+    <div style="flex:1;min-width:280px">
+      <label class="card-label">查询语句</label>
+      <input id="query" placeholder='如 FOFA: domain="example.com"　Shodan: apache　Hunter: ip="1.1.1.1"'>
+    </div>
+    <div style="width:110px">
+      <label class="card-label">数量</label>
+      <input id="size" type="number" value="100" min="1" max="1000">
+    </div>
+    <button id="btn-query">查询</button>
+    <button id="btn-export" class="ghost" disabled>导出 CSV</button>
+  </div>
+  <div id="msg" style="margin-top:12px"></div>
+</div>
+
+<div class="panel hidden" id="result-panel">
+  <div class="panel-head">
+    <h3>查询结果 <span id="result-meta" style="color:var(--dim);font-size:12px"></span></h3>
+    <div class="pager" id="osint-pager" style="margin-top:0"></div>
+  </div>
+  <div style="overflow:auto;max-height:520px">
+    <table class="data-table" id="result-table"><thead></thead><tbody></tbody></table>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head"><h3>最近查询</h3></div>
+  {% if recent %}
+  <table class="data-table">
+    <thead><tr><th>引擎</th><th>查询</th><th>结果数</th><th>消耗</th><th>缓存</th><th>时间</th></tr></thead>
+    <tbody>
+    {% for r in recent %}
+      <tr><td>{{ r.provider }}</td><td class="detail">{{ r.query_text }}</td><td>{{ r.result_count }}</td>
+      <td>{{ r.cost }}</td><td>{{ '是' if r.cache_hit else '否' }}</td>
+      <td>{{ r.created_at.strftime('%m-%d %H:%M') }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<div class="empty-hint">还没有查询记录。</div>{% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>.hidden{display:none!important}</style>
+<script>
+const el = id => document.getElementById(id);
+let lastReq = null;      // {provider, query, size, page}
+let curTotal = 0;
+
+async function runQuery(page = 1) {
+  const provider = el('provider').value, query = el('query').value.trim(), size = el('size').value;
+  if (!query) { el('msg').innerHTML = '<div class="flash flash-error">请输入查询语句</div>'; return; }
+  el('msg').innerHTML = '<span style="color:var(--muted)">查询中…</span>';
+  el('btn-query').disabled = true;
+  const body = new URLSearchParams({provider, query, size, page});
+  try {
+    const r = await fetch("{{ url_for('osint.do_query') }}", {method:'POST', body});
+    const d = await r.json();
+    if (d.error) { el('msg').innerHTML = `<div class="flash flash-error">${d.error}</div>`; el('btn-export').disabled = true; return; }
+    lastReq = {provider, query, size, page: d.page || page};
+    curTotal = d.total || 0;
+    el('msg').innerHTML = `<div class="flash flash-ok">共 ${curTotal.toLocaleString()} 条${d.cached?'（缓存命中，未扣费）':'，消耗 '+d.cost+' 积分'}</div>`;
+    renderTable(d);
+    renderPager(d.page || page, d.size || size, curTotal);
+    el('btn-export').disabled = false;
+  } catch (e) { el('msg').innerHTML = '<div class="flash flash-error">请求异常</div>'; }
+  finally { el('btn-query').disabled = false; }
+}
+
+function renderTable(d) {
+  el('result-panel').classList.remove('hidden');
+  el('result-meta').textContent = `显示 ${d.rows.length} / 共 ${(d.total||0).toLocaleString()} 条`;
+  const thead = el('result-table').querySelector('thead');
+  const tbody = el('result-table').querySelector('tbody');
+  thead.innerHTML = '<tr>' + d.columns.map(c => `<th>${c}</th>`).join('') + '</tr>';
+  tbody.innerHTML = d.rows.map(row => '<tr>' + row.map(v => `<td class="detail">${v==null?'':String(v)}</td>`).join('') + '</tr>').join('');
+}
+
+function renderPager(page, size, total) {
+  const pages = Math.max(1, Math.ceil(total / (parseInt(size) || 100)));
+  const cap = Math.min(pages, 50);   // 大多数引擎有翻页上限，防止越界
+  if (cap <= 1) { el('osint-pager').innerHTML = ''; return; }
+  let h = '';
+  h += page > 1 ? `<a class="pg" data-p="${page-1}">‹</a>` : '<span class="pg disabled">‹</span>';
+  h += `<span class="pg active">${page}</span><span class="pg-info" style="margin:0 6px">/ ${cap} 页</span>`;
+  h += page < cap ? `<a class="pg" data-p="${page+1}">›</a>` : '<span class="pg disabled">›</span>';
+  el('osint-pager').innerHTML = h;
+  el('osint-pager').querySelectorAll('a.pg').forEach(a => a.addEventListener('click', () => runQuery(parseInt(a.dataset.p))));
+}
+
+async function exportCsv() {
+  if (!lastReq) return;
+  const f = document.createElement('form');
+  f.method = 'POST'; f.action = "{{ url_for('osint.export_csv') }}";
+  for (const k in lastReq) { const i = document.createElement('input'); i.name = k; i.value = lastReq[k]; f.appendChild(i); }
+  document.body.appendChild(f); f.submit(); f.remove();
+}
+
+el('btn-query').addEventListener('click', () => runQuery(1));
+el('query').addEventListener('keydown', e => { if (e.key === 'Enter') runQuery(1); });
+el('btn-export').addEventListener('click', exportCsv);
+</script>
+{% endblock %}

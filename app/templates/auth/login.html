@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}登录 · Aegis{% endblock %}
+{% block content_full %}
+<div class="login-wrap">
+  <form class="login-card" method="post" action="{{ url_for('auth.login') }}">
+    <div class="login-logo">A</div>
+    <h1>Aegis</h1>
+    <p class="sub">团队安全工具箱</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}<div class="flash flash-{{ cat }}">{{ msg }}</div>{% endfor %}
+    {% endwith %}
+    <input name="username" placeholder="用户名" autofocus required>
+    <input name="password" type="password" placeholder="密码" required>
+    {% if captcha_on %}
+    <div class="cap-row">
+      <input name="captcha" placeholder="验证码" autocomplete="off" maxlength="4" required>
+      <img class="cap-img" src="{{ url_for('auth.captcha_img') }}" title="点击刷新"
+           onclick="this.src='{{ url_for('auth.captcha_img') }}?t='+Date.now()">
+    </div>
+    {% endif %}
+    <label class="trust"><input type="checkbox" name="trust_device"> 信任此设备（{{ trusted_days or 30 }} 天内免验证）</label>
+    <button type="submit">登 录</button>
+    <div class="login-links">
+      {% if reg_mode and reg_mode != 'off' %}<a href="{{ url_for('auth.register') }}">注册账号</a><span>·</span>{% endif %}
+      <a href="{{ url_for('site.landing') }}">了解 {{ site_name or 'Aegis' }}</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

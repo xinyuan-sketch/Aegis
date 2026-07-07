@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}个人中心 · Aegis{% endblock %}
+{% block content %}
+<div class="page-head"><h1>个人中心 · 安全</h1></div>
+
+<div class="grid grid-2">
+  <!-- 二次验证 -->
+  <div class="card" style="--c: {{ 'var(--c-green)' if current_user.totp_enabled else 'var(--c-orange)' }}">
+    <div class="card-top">
+      <span class="card-label"><svg class="ico"><use href="#i-shield"/></svg>二次验证 (TOTP)</span>
+      <span class="badge {{ 'badge-on' if current_user.totp_enabled else 'badge-warn' }}">{{ '已开启' if current_user.totp_enabled else '未开启' }}</span>
+    </div>
+
+    {% if current_user.totp_enabled %}
+      <p style="color:var(--muted);font-size:13px">登录时需输入验证器动态码（可信设备除外）。</p>
+      <form method="post" action="{{ url_for('me.totp_disable') }}" style="display:flex;gap:8px;margin-top:8px">
+        <input name="code" placeholder="输入当前动态码以关闭" maxlength="6" style="flex:1">
+        <button class="danger">关闭</button>
+      </form>
+    {% elif setup_secret %}
+      <p style="color:var(--muted);font-size:13px">用 Google Authenticator / 1Password 等扫码，或手动输入密钥：</p>
+      <div style="background:#fff;padding:10px;border-radius:12px;width:170px;margin:10px 0">{{ qr|safe }}</div>
+      <div class="stat-sub">手动密钥：<code style="color:var(--text);user-select:all">{{ setup_secret }}</code></div>
+      <form method="post" action="{{ url_for('me.totp_enable') }}" style="display:flex;gap:8px;margin-top:12px">
+        <input name="code" placeholder="输入 6 位动态码确认" maxlength="6" style="flex:1">
+        <button>确认开启</button>
+      </form>
+    {% else %}
+      <p style="color:var(--muted);font-size:13px">开启后登录需二次验证，大幅提升账户安全。{% if not totp_available %}<br><span style="color:var(--c-red)">服务器未安装 pyotp，暂不可用。</span>{% endif %}</p>
+      <form method="post" action="{{ url_for('me.totp_setup') }}" style="margin-top:8px">
+        <button {{ 'disabled' if not totp_available }}>开始设置</button>
+      </form>
+    {% endif %}
+  </div>
+
+  <!-- 可信设备 -->
+  <div class="card" style="--c:var(--c-blue)">
+    <div class="card-top"><span class="card-label"><svg class="ico"><use href="#i-monitor"/></svg>可信设备</span></div>
+    <p style="color:var(--muted);font-size:13px">这些设备在有效期内登录免二次验证。</p>
+    {% if devices %}
+    <table class="data-table">
+      <thead><tr><th>设备</th><th>到期</th><th>状态</th><th></th></tr></thead>
+      <tbody>
+      {% for d in devices %}
+        <tr>
+          <td>{{ d.name or '未知' }}</td>
+          <td>{{ d.expires_at.strftime('%Y-%m-%d') }}</td>
+          <td>{% if d.is_valid %}<span class="badge badge-on">有效</span>{% else %}<span class="badge badge-off">已过期</span>{% endif %}</td>
+          <td><form method="post" action="{{ url_for('me.revoke_device', did=d.id) }}"><button class="danger" style="padding:5px 10px;font-size:12px">撤销</button></form></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<div class="empty-hint">暂无可信设备。登录时勾选「信任此设备」即可添加。</div>{% endif %}
+  </div>
+</div>
+{% endblock %}

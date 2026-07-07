@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from '_pagination.html' import pager %}
+{% block title %}安全导航 · Aegis{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="page-head"><h1>安全导航</h1></div>
+  <form method="get" action="{{ url_for('nav.index') }}" style="display:flex;gap:8px">
+    <input name="q" value="{{ kw }}" placeholder="搜索站点…" style="width:220px">
+    <button class="ghost">搜索</button>
+  </form>
+</div>
+
+<div class="panel" style="margin-top:0;display:flex;gap:24px;flex-wrap:wrap;align-items:flex-end">
+  <form method="post" action="{{ url_for('nav.add') }}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;flex:1">
+    <div><label class="card-label">名称</label><input name="name" required style="width:150px"></div>
+    <div><label class="card-label">链接</label><input name="url" placeholder="https://" required style="width:220px"></div>
+    <div><label class="card-label">分类</label><input name="category" placeholder="未分类" style="width:120px"></div>
+    <button type="submit">添加</button>
+  </form>
+  <form method="post" action="{{ url_for('nav.import_bookmarks') }}" enctype="multipart/form-data" style="display:flex;gap:12px;align-items:center">
+    <label class="filedrop" style="min-width:220px">
+      <input type="file" name="file" accept=".html">
+      <span class="fd-ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16"/></svg></span>
+      <span><span class="fd-name">选择书签 HTML</span><span class="fd-hint">浏览器导出的书签</span></span>
+    </label>
+    <input type="hidden" name="category" value="导入">
+    <button class="ghost" type="submit">导入</button>
+  </form>
+</div>
+
+{% for category, links in groups.items() %}
+<div class="cat-head">
+  <span class="cat-bar"></span>
+  <h2>{{ category }}</h2>
+  <span class="badge badge-info">{{ links|length }}</span>
+</div>
+<div class="grid grid-4">
+  {% for l in links %}
+  <div class="card" style="--c:var(--c-cyan)">
+    <div class="card-top">
+      <span style="font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ l.name }}</span>
+      <span class="badge badge-info" title="被打开次数">{{ l.clicks }} 次</span>
+    </div>
+    {% if l.description %}<div class="stat-sub" style="margin-top:0">{{ l.description }}</div>{% endif %}
+    <div class="stat-sub" title="{{ l.url }}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ l.url }}</div>
+    <div style="display:flex;gap:8px;margin-top:12px;align-items:center;flex-wrap:wrap">
+      <a class="btn" href="{{ url_for('nav.go', nid=l.id) }}" target="_blank" rel="noreferrer" style="padding:6px 12px;font-size:12px">打开 ↗</a>
+      <button class="ghost btn-copy" data-url="{{ l.url }}" style="padding:6px 12px;font-size:12px">复制</button>
+      {% if current_user.is_admin or l.created_by == current_user.id %}
+      <form method="post" action="{{ url_for('nav.delete', nid=l.id) }}" style="margin-left:auto"><button class="danger" style="padding:6px 11px;font-size:12px">删除</button></form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-hint">还没有导航链接。用上方表单添加，或导入浏览器书签。</div>
+{% endfor %}
+{{ pager(pg, 'nav.index', {'q': kw} if kw else {}) }}
+{% endblock %}
+
+{% block scripts %}
+<style>
+.cat-head { display: flex; align-items: center; gap: 10px; margin: 28px 0 14px; }
+.cat-head .cat-bar { width: 5px; height: 20px; border-radius: 3px;
+  background: linear-gradient(180deg, var(--brand), var(--brand-2)); box-shadow: 0 0 10px 1px rgba(99,102,241,.5); }
+.cat-head h2 { margin: 0; font-size: 17px; font-weight: 650; letter-spacing: .2px; }
+</style>
+<script>
+document.querySelectorAll('.btn-copy').forEach(b => b.addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(b.dataset.url); const t = b.textContent; b.textContent = '已复制'; setTimeout(() => b.textContent = t, 1500); }
+  catch (e) { b.textContent = '复制失败'; }
+}));
+</script>
+{% endblock %}

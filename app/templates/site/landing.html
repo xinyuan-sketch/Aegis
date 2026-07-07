@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aegis · 团队安全工具箱</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <style>
+    body { overflow-x: hidden; }
+    .lp { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+
+    /* 顶栏 */
+    .lp-nav { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px);
+      background: rgba(10,12,18,.6); border-bottom: 1px solid var(--line); }
+    .lp-nav .lp { display: flex; align-items: center; justify-content: space-between; height: 62px; }
+    .lp-brand { display: flex; align-items: center; gap: 11px; font-weight: 700; font-size: 19px; }
+    .lp-logo { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
+      font-size: 17px; color: #fff; background: linear-gradient(135deg, var(--brand), var(--brand-2));
+      box-shadow: 0 6px 18px -4px rgba(99,102,241,.7), inset 0 1px 0 rgba(255,255,255,.3); }
+    .lp-brand .name { background: linear-gradient(90deg,#fff,#b9c0ff); -webkit-background-clip:text;
+      background-clip:text; -webkit-text-fill-color:transparent; }
+    .lp-navlinks { display: flex; align-items: center; gap: 24px; color: var(--muted); font-size: 14px; }
+    .lp-navlinks a:hover { color: var(--text); }
+    .lp-btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px; border-radius: 11px;
+      font-weight: 600; font-size: 14px; color: #fff; background: linear-gradient(135deg, var(--brand), #7c7ff5);
+      box-shadow: 0 8px 20px -6px rgba(99,102,241,.6); transition: filter .15s, transform .1s; }
+    .lp-btn:hover { filter: brightness(1.08); } .lp-btn:active { transform: translateY(1px); }
+    .lp-btn.ghost { background: rgba(255,255,255,.06); box-shadow: none; color: var(--text); }
+
+    /* Hero */
+    .lp-hero { position: relative; text-align: center; padding: 90px 0 70px; }
+    .lp-hero::before { content:""; position: absolute; inset: -10% -20% auto -20%; height: 520px; z-index:-1;
+      background: radial-gradient(600px 300px at 50% 0, rgba(99,102,241,.28), transparent 70%),
+                  radial-gradient(500px 260px at 20% 40%, rgba(34,211,238,.18), transparent 70%),
+                  radial-gradient(500px 260px at 80% 40%, rgba(167,139,250,.18), transparent 70%);
+      filter: blur(6px); }
+    .lp-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px;
+      font-size: 13px; color: var(--brand-2); background: rgba(34,211,238,.1);
+      box-shadow: inset 0 0 0 1px rgba(34,211,238,.25); margin-bottom: 22px; }
+    .lp-pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--c-green);
+      box-shadow: 0 0 10px 2px rgba(52,211,153,.8); animation: pulse 1.5s infinite; }
+    .lp-hero h1 { font-size: 54px; line-height: 1.1; margin: 0 0 20px; font-weight: 780; letter-spacing: -.5px; }
+    .lp-hero h1 .grad { background: linear-gradient(120deg,#fff 10%, #a5b4fc 55%, #22d3ee 100%);
+      -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+    .lp-hero p.sub { max-width: 680px; margin: 0 auto 32px; color: var(--muted); font-size: 18px; line-height: 1.65; }
+    .lp-cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .lp-cta .lp-btn { padding: 13px 26px; font-size: 15px; }
+
+    /* 信任条 */
+    .lp-trust { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 40px; margin-top: 52px;
+      color: var(--muted); font-size: 14px; }
+    .lp-trust b { color: var(--text); }
+
+    /* 区块标题 */
+    .lp-sec { padding: 66px 0; }
+    .lp-sec h2 { text-align: center; font-size: 34px; margin: 0 0 10px; font-weight: 720; letter-spacing: -.3px; }
+    .lp-sec .desc { text-align: center; color: var(--muted); font-size: 16px; margin: 0 auto 42px; max-width: 620px; }
+
+    .lp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    @media (max-width: 900px){ .lp-grid { grid-template-columns: 1fr; } .lp-hero h1{font-size:38px;} }
+    .lp-card { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+      padding: 24px; box-shadow: var(--shadow); overflow: hidden; transition: transform .22s, box-shadow .22s, border-color .22s; }
+    .lp-card::before { content:""; position:absolute; inset:0 0 auto 0; height:2px;
+      background: linear-gradient(90deg, transparent, var(--c,var(--brand)), transparent); opacity:.9; }
+    .lp-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lift);
+      border-color: color-mix(in srgb, var(--c,var(--brand)) 45%, transparent); }
+    .lp-ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; margin-bottom: 15px;
+      color: var(--c,var(--brand)); background: color-mix(in srgb, var(--c,var(--brand)) 14%, transparent); }
+    .lp-ic svg { width: 22px; height: 22px; }
+    .lp-card h3 { margin: 0 0 8px; font-size: 17px; }
+    .lp-card p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+    /* 安全区（横向条目）*/
+    .lp-sec.alt { background: linear-gradient(180deg, rgba(99,102,241,.05), transparent); border-top:1px solid var(--line); border-bottom:1px solid var(--line);}
+    .lp-feats { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px 40px; max-width: 900px; margin: 0 auto; }
+    @media (max-width: 720px){ .lp-feats { grid-template-columns: 1fr; } }
+    .lp-feat { display: flex; gap: 14px; }
+    .lp-feat .dot { flex: none; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
+      color: var(--c-green); background: rgba(52,211,153,.12); }
+    .lp-feat h4 { margin: 2px 0 4px; font-size: 15px; }
+    .lp-feat p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.55; }
+
+    /* 技术栈 */
+    .lp-stack { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+    .lp-chip { padding: 9px 16px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--muted); font-size: 14px; }
+
+    /* 结尾 CTA */
+    .lp-final { text-align: center; padding: 80px 24px; margin: 40px 0; border-radius: 24px; position: relative; overflow: hidden;
+      background: linear-gradient(135deg, rgba(99,102,241,.16), rgba(34,211,238,.1));
+      border: 1px solid var(--line-strong); }
+    .lp-final h2 { font-size: 34px; margin: 0 0 14px; }
+    .lp-final p { color: var(--muted); margin: 0 0 26px; }
+
+    .lp-foot { text-align: center; color: var(--dim); font-size: 13px; padding: 40px 0 60px; border-top: 1px solid var(--line); }
+  </style>
+</head>
+<body>
+
+<header class="lp-nav">
+  <div class="lp">
+    <div class="lp-brand"><span class="lp-logo">A</span><span class="name">Aegis</span></div>
+    <nav class="lp-navlinks">
+      <a href="#tools">功能</a>
+      <a href="#security">安全</a>
+      <a href="#stack">技术</a>
+      <a href="{{ url_for('auth.login') }}" class="lp-btn">进入控制台</a>
+    </nav>
+  </div>
+</header>
+
+<section class="lp-hero">
+  <div class="lp">
+    <span class="lp-pill"><i></i>团队级 · 自托管 · 开箱即用</span>
+    <h1>一体化的<span class="grad">团队安全工具箱</span></h1>
+    <p class="sub">OSINT 查询、凭证保管、Hash 解密、云浏览器、Payload 生成……把红队日常最常用的工具收进一个平台，配上统一的权限、积分、审计与二次验证。</p>
+    <div class="lp-cta">
+      <a href="{{ url_for('auth.login') }}" class="lp-btn">立即登录 →</a>
+      <a href="#tools" class="lp-btn ghost">查看功能</a>
+    </div>
+    <div class="lp-trust">
+      <span><b>7</b> 大工具模块</span>
+      <span><b>Fernet</b> 凭证加密</span>
+      <span><b>TOTP</b> 二次验证</span>
+      <span><b>一键</b> 脚本部署</span>
+      <span><b>实时</b> 审计留痕</span>
+    </div>
+  </div>
+</section>
+
+<section class="lp-sec" id="tools">
+  <div class="lp">
+    <h2>七大工具，一个入口</h2>
+    <p class="desc">每个工具都挂在统一的权限门之后，按次扣积分、全程审计，团队协作井然有序。</p>
+    <div class="lp-grid">
+      <div class="lp-card" style="--c:var(--c-red)">
+        <div class="lp-ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></div>
+        <h3>OSINT 查询</h3><p>Hunter / FOFA / Shodan 三引擎统一入口，批量查询、结果缓存去重、CSV 导出，服务端共享 Key。</p>
+      </div>
+      <div class="lp-card" style="--c:var(--c-blue)">
+        <div class="lp-ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 9h16M4 15h16M10 3L8 21M16 3l-2 18"/></svg></div>
+        <h3>Hash 查询</h3><p>MD5 / SHA1 / SHA256 批量识别与在线查库，命中缓存秒出、不重复扣费，可接 hashes.com。</p>
+      </div>
+      <div class="lp-card" style="--c:var(--c-purple)">
+        <div class="lp-ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.5 12.5L20 3m-3 0l3 3-3 3"/></svg></div>
+        <h3>共享凭证</h3><p>团队级凭证保险库，8 种类型、公开/私密权限，Fernet 加密存储、点击即复制、脱敏显示。</p>
+      </div>
+      <div class="lp-card" style="--c:var(--c-cyan)">
+        <div class="lp-ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg></div>
+        <h3>安全导航</h3><p>分类收藏常用站点，实时搜索、点击统计热门优先，一键导入浏览器书签。</p>
+      </div>
+      <div class="lp-card" style="--c:var(--c-green)">
+        <div class="lp-ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg></div>
+        <h3>下载中心</h3><p>查询结果、报告、截图统一归档，上传/下载/重命名/删除，UUID 存储防路径穿越。</p>
+      </div>
+      <div class="lp-card" style="--c:var(--c-orange)">
+        <div class="lp-ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M13 15h4"/></svg></div>
+        <h3>Payload 生成器</h3><p>标准反弹 / 正向 shell 多语言模板，输入 IP 端口即时生成、一键复制，附监听命令。</p>
+      </div>
+      <div class="lp-card" style="--c:var(--c-blue)">
+        <div class="lp-ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div>
+        <h3>云浏览器</h3><p>容器化远程 Chrome（noVNC），多人共用同一实例，实时在线人数、一键重启、操作审计。</p>
+      </div>
+      <div class="lp-card" style="--c:var(--c-yellow)">
+        <div class="lp-ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+        <h3>实时仪表盘</h3><p>今日操作、在线用户、各工具用量、服务器 CPU/内存/磁盘、积分消耗排行，一屏尽览。</p>
+      </div>
+      <div class="lp-card" style="--c:var(--c-purple)">
+        <div class="lp-ic"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/></svg></div>
+        <h3>插件扩展</h3><p>预留受权限保护的插件槽与可套用脚手架，自定义工具（含你自研模块）三步即可接入。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="lp-sec alt" id="security">
+  <div class="lp">
+    <h2>安全，是底座而非附加项</h2>
+    <p class="desc">从认证到审计，每一层都为团队协作的敏感场景设计。</p>
+    <div class="lp-feats">
+      {% set svg_check = '<svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>' %}
+      <div class="lp-feat"><div class="dot">{{ svg_check|safe }}</div><div><h4>TOTP 二次验证</h4><p>验证器动态码 + 可信设备免验证，登录异常实时告警。</p></div></div>
+      <div class="lp-feat"><div class="dot">{{ svg_check|safe }}</div><div><h4>RBAC + 申请审批</h4><p>按工具粒度授权，普通用户申请、管理员审批后即时生效。</p></div></div>
+      <div class="lp-feat"><div class="dot">{{ svg_check|safe }}</div><div><h4>Fernet 加密存储</h4><p>凭证与 API Key 密文入库，主密钥仅存环境变量、绝不落库。</p></div></div>
+      <div class="lp-feat"><div class="dot">{{ svg_check|safe }}</div><div><h4>全量审计日志</h4><p>登录、授权、Key 变更、凭证读取、工具操作按类留痕可查。</p></div></div>
+      <div class="lp-feat"><div class="dot">{{ svg_check|safe }}</div><div><h4>积分账本</h4><p>每次操作按次扣费、只追加账本，消耗可追溯、有排行。</p></div></div>
+      <div class="lp-feat"><div class="dot">{{ svg_check|safe }}</div><div><h4>Telegram 告警</h4><p>登录失败、2FA 失败、新设备登录、权限申请实时推送。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="lp-sec" id="stack">
+  <div class="lp">
+    <h2>轻量、可控、易部署</h2>
+    <p class="desc">Flask 服务端渲染 + 零前端框架，SQLite 起步可平滑迁 PostgreSQL，一条脚本拉起。</p>
+    <div class="lp-stack">
+      <span class="lp-chip">Flask</span><span class="lp-chip">SQLAlchemy</span><span class="lp-chip">SQLite / PostgreSQL</span>
+      <span class="lp-chip">Gunicorn</span><span class="lp-chip">Nginx</span><span class="lp-chip">Docker Compose</span>
+      <span class="lp-chip">noVNC</span><span class="lp-chip">Fernet / pyotp</span><span class="lp-chip">原生 JS</span>
+    </div>
+  </div>
+</section>
+
+<div class="lp">
+  <div class="lp-final">
+    <h2>准备好接管你的安全工作流了吗？</h2>
+    <p>一键脚本本地起、systemd/Docker 上生产，几分钟即可让团队用起来。</p>
+    <a href="{{ url_for('auth.login') }}" class="lp-btn">进入控制台 →</a>
+  </div>
+</div>
+
+<footer class="lp-foot">
+  <div class="lp">Aegis · 团队安全工具箱　·　仅供授权测试与内部协作使用</div>
+</footer>
+
+</body>
+</html>

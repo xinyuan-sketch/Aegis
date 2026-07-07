@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}权限管理 · Aegis{% endblock %}
+{% block content %}
+<div class="page-head"><h1>权限管理</h1></div>
+
+<h2>待审批申请</h2>
+{% if pending %}
+<table class="data-table">
+  <thead><tr><th>申请人</th><th>工具</th><th>理由</th><th>时间</th><th>操作</th></tr></thead>
+  <tbody>
+  {% for r in pending %}
+    <tr>
+      <td>{{ r.user_id }}</td><td>{{ r.tool_key }}</td><td>{{ r.reason }}</td>
+      <td>{{ r.created_at.strftime('%m-%d %H:%M') }}</td>
+      <td class="ops">
+        <form method="post" action="{{ url_for('admin.permissions') }}">
+          <input type="hidden" name="request_id" value="{{ r.id }}">
+          <button name="decision" value="approve">通过</button>
+          <button name="decision" value="reject" class="danger">驳回</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}<p class="empty-hint">暂无待审批申请。</p>{% endif %}
+
+<h2>直接授权</h2>
+<form method="post" action="{{ url_for('admin.grant_permission') }}" class="inline-form">
+  <select name="user_id">{% for u in users %}<option value="{{ u.id }}">{{ u.username }}</option>{% endfor %}</select>
+  <select name="tool_key">{% for t in tools %}<option value="{{ t.key }}">{{ t.name }}</option>{% endfor %}</select>
+  <button type="submit">授权</button>
+</form>
+{% endblock %}

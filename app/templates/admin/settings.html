@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}系统设置 · {{ site_name or 'Aegis' }}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>系统设置</h1></div>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">站点、注册策略、验证码、积分与登录安全的集中配置。修改即时生效。</p>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in messages %}<div class="flash flash-{{ cat }}">{{ msg }}</div>{% endfor %}
+{% endwith %}
+
+<div class="panel">
+  <div class="panel-head"><h3>基本设置</h3></div>
+  <form method="post" action="{{ url_for('admin.system_settings') }}" class="set-grid">
+    <input type="hidden" name="action" value="save">
+    {% for key, label, typ in fields %}
+    <div class="set-row">
+      <label>{{ label }}</label>
+      {% if typ == 'bool' %}
+        <label class="trust" style="color:var(--muted)"><input type="checkbox" name="{{ key }}" {{ 'checked' if values[key] in ('1','true','on','yes') }}> 开启</label>
+      {% elif typ == 'regmode' %}
+        <select name="{{ key }}">
+          {% for mkey, mlabel in reg_labels.items() %}
+          <option value="{{ mkey }}" {{ 'selected' if values[key] == mkey }}>{{ mlabel }}</option>
+          {% endfor %}
+        </select>
+      {% elif typ == 'int' %}
+        <input name="{{ key }}" type="number" value="{{ values[key] }}">
+      {% else %}
+        <input name="{{ key }}" value="{{ values[key] }}">
+      {% endif %}
+    </div>
+    {% endfor %}
+    <div style="grid-column:1/-1;margin-top:6px"><button type="submit">保存设置</button></div>
+  </form>
+</div>
+
+<div class="panel">
+  <div class="panel-head">
+    <h3>邀请码 <span style="color:var(--dim);font-size:12px">邀请码注册模式下使用</span></h3>
+    <form method="post" action="{{ url_for('admin.system_settings') }}" style="display:flex;gap:8px;align-items:center">
+      <input type="hidden" name="action" value="gen_invite">
+      <input name="count" type="number" value="5" min="1" max="50" style="width:80px;padding:6px 9px">
+      <button type="submit" style="padding:6px 12px;font-size:13px">生成</button>
+    </form>
+  </div>
+  {% if pending_users %}
+  <div class="flash flash-warn" style="margin-bottom:12px">当前有 <b>{{ pending_users }}</b> 个待激活账号，可在「用户管理」中启用。</div>
+  {% endif %}
+  {% if invites %}
+  <table class="data-table">
+    <thead><tr><th>邀请码</th><th>状态</th><th>使用者</th><th>创建时间</th><th>操作</th></tr></thead>
+    <tbody>
+    {% for i in invites %}
+    <tr>
+      <td><code style="user-select:all">{{ i.code }}</code></td>
+      <td>{% if i.is_used %}<span class="badge badge-off">已使用</span>{% else %}<span class="badge badge-on">可用</span>{% endif %}</td>
+      <td>{{ umap.get(i.used_by, '—') if i.used_by else '—' }}</td>
+      <td style="color:var(--muted);font-size:12px">{{ i.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td class="ops">
+        {% if not i.is_used %}
+        <form method="post" action="{{ url_for('admin.system_settings') }}">
+          <input type="hidden" name="action" value="del_invite">
+          <input type="hidden" name="invite_id" value="{{ i.id }}">
+          <button class="danger" style="padding:5px 10px;font-size:12px">删除</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="color:var(--dim);font-size:13px">暂无邀请码，点击「生成」创建。</div>
+  {% endif %}
+</div>
+
+<style>
+.set-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px 24px; }
+.set-row { display:flex; flex-direction:column; gap:6px; }
+.set-row label:first-child { color:var(--muted); font-size:13px; }
+@media(max-width:720px){ .set-grid{ grid-template-columns:1fr; } }
+</style>
+{% endblock %}

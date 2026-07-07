@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% from '_pagination.html' import pager %}
+{% block title %}代码片段库 · {{ site_name or 'Aegis' }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="page-head"><h1>代码片段库</h1></div>
+  <a class="btn" href="{{ url_for('snippets.new') }}">+ 新建片段</a>
+</div>
+
+<form class="filters" method="get" action="{{ url_for('snippets.index') }}">
+  <a class="chip {{ 'active' if not scope }}" href="{{ url_for('snippets.index') }}">全部</a>
+  <a class="chip {{ 'active' if scope == 'mine' }}" href="{{ url_for('snippets.index', scope='mine') }}">我的</a>
+  <a class="chip {{ 'active' if scope == 'shared' }}" href="{{ url_for('snippets.index', scope='shared') }}">团队共享</a>
+  <select name="lang" onchange="this.form.submit()">
+    <option value="">全部语言</option>
+    {% for l in languages %}<option value="{{ l }}" {{ 'selected' if lang == l }}>{{ l }}</option>{% endfor %}
+  </select>
+  <input name="q" value="{{ q }}" placeholder="搜索标题 / 内容 / 标签" style="flex:1;min-width:160px">
+  {% if scope %}<input type="hidden" name="scope" value="{{ scope }}">{% endif %}
+  <button type="submit">搜索</button>
+</form>
+
+{% if pg.items %}
+<div class="snip-list">
+  {% for s in pg.items %}
+  <div class="panel snip">
+    <div class="snip-head">
+      <span class="snip-title">{{ s.title }}</span>
+      <span class="badge badge-info">{{ s.language }}</span>
+      {% if s.visibility == 'public' %}<span class="badge badge-on">共享</span>{% endif %}
+      {% for t in s.tag_list[:5] %}<span class="tag-pill">{{ t }}</span>{% endfor %}
+      <span class="snip-by">{{ owners.get(s.owner_id, '') }}</span>
+      <span class="snip-ops">
+        <button class="snip-copy ghost" data-body="{{ s.body|e }}" style="padding:4px 10px;font-size:12px">复制</button>
+        {% if s.owner_id == current_user.id or current_user.is_admin %}
+        <a href="{{ url_for('snippets.edit', sid=s.id) }}" class="stat-sub" style="font-size:12px">编辑</a>
+        <form method="post" action="{{ url_for('snippets.delete', sid=s.id) }}" style="display:inline" onsubmit="return confirm('删除该片段？')"><button class="danger" style="padding:4px 10px;font-size:12px">删除</button></form>
+        {% endif %}
+      </span>
+    </div>
+    <pre class="snip-body"><code>{{ s.body }}</code></pre>
+  </div>
+  {% endfor %}
+</div>
+{{ pager(pg, 'snippets.index', {'q': q, 'lang': lang, 'scope': scope}) }}
+{% else %}
+<div class="empty-hint">还没有片段。把常用命令、payload、正则存进来，用的时候一键复制。</div>
+{% endif %}
+
+<style>
+.snip-list { display:flex; flex-direction:column; gap:14px; }
+.snip { padding:14px 16px; }
+.snip-head { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+.snip-title { font-weight:600; color:var(--text); }
+.tag-pill { font-size:11px; color:var(--c-cyan); background:var(--inset); padding:2px 8px; border-radius:999px; }
+.snip-by { color:var(--dim); font-size:12px; }
+.snip-ops { margin-left:auto; display:flex; align-items:center; gap:10px; }
+.snip-body { background:var(--inset); border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin:0;
+  overflow:auto; max-height:320px; font-family:ui-monospace,monospace; font-size:12.5px; color:var(--text); white-space:pre; }
+</style>
+<script>
+document.querySelectorAll('.snip-copy').forEach(b=>b.addEventListener('click',function(){
+  navigator.clipboard.writeText(this.getAttribute('data-body')).then(()=>{
+    const o=this.textContent; this.textContent='已复制'; setTimeout(()=>this.textContent=o,1000);
+  }).catch(()=>{});
+}));
+</script>
+{% endblock %}

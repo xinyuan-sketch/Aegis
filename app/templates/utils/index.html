@@ -1,0 +1,906 @@
+{% extends "base.html" %}
+{% block title %}工具箱 · Aegis{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="page-head"><h1>工具箱</h1></div>
+  <div style="color:var(--muted);font-size:13px">全部在浏览器本地完成，数据不外传</div>
+</div>
+
+<div class="filters ut-tabs" id="ut-tabs">
+  <a class="chip active" data-tab="encode">编码 / 解码</a>
+  <a class="chip" data-tab="hash">哈希 / 校验</a>
+  <a class="chip" data-tab="hmac">HMAC</a>
+  <a class="chip" data-tab="crypto">加密 / 密码学</a>
+  <a class="chip" data-tab="jwt">JWT 解析</a>
+  <a class="chip" data-tab="pass">密码生成</a>
+  <a class="chip" data-tab="text">文本处理</a>
+  <a class="chip" data-tab="regex">正则测试</a>
+  <a class="chip" data-tab="json">JSON / 数据</a>
+  <a class="chip" data-tab="color">颜色转换</a>
+  <a class="chip" data-tab="net">网络工具</a>
+  <a class="chip" data-tab="time">时间戳</a>
+  <a class="chip" data-tab="gen">生成器</a>
+</div>
+
+<!-- ============ 编码/解码 ============ -->
+<div class="panel ut-pane" data-pane="encode">
+  <div class="ut-bar">
+    <select id="enc-type">
+      <option value="base64">Base64</option>
+      <option value="base64url">Base64 URL</option>
+      <option value="url">URL 编码</option>
+      <option value="hex">Hex（十六进制）</option>
+      <option value="base32">Base32</option>
+      <option value="html">HTML 实体</option>
+      <option value="unicode">Unicode \u</option>
+      <option value="ascii">ASCII 码（十进制）</option>
+      <option value="binary">二进制</option>
+      <option value="rot13">ROT13</option>
+      <option value="morse">摩尔斯电码</option>
+    </select>
+    <button id="enc-go">编码 →</button>
+    <button id="dec-go" class="ghost">← 解码</button>
+    <button id="enc-swap" class="ghost" title="把输出放回输入">⇅ 互换</button>
+    <button id="enc-all" class="ghost">全部编码视图</button>
+  </div>
+  <label class="card-label">输入</label>
+  <textarea id="enc-in" rows="4" placeholder="在此输入要处理的文本"></textarea>
+  <label class="card-label" style="margin-top:10px">输出</label>
+  <textarea id="enc-out" rows="4" readonly placeholder="结果"></textarea>
+  <div id="enc-allbox" class="ut-rows" style="margin-top:12px"></div>
+</div>
+
+<!-- ============ 哈希 ============ -->
+<div class="panel ut-pane hidden" data-pane="hash">
+  <label class="card-label">输入文本（自动计算）</label>
+  <textarea id="hash-in" rows="4" placeholder="MD5 / SHA-1 / SHA-256 / SHA-384 / SHA-512 / CRC32"></textarea>
+  <div id="hash-out" class="ut-rows" style="margin-top:12px"></div>
+  <hr class="ut-hr">
+  <label class="card-label">文件哈希（拖入或选择文件，逐块流式计算，文件不上传）</label>
+  <div class="filedrop" id="hash-drop">
+    <input type="file" id="hash-file">
+    <div class="fd-inner"><svg class="ico fd-ico"><use href="#i-download"/></svg><span class="fd-name">点击选择文件，或拖拽到此处</span></div>
+  </div>
+  <div id="hash-fmeta" class="stat-sub" style="margin-top:8px"></div>
+  <div id="hash-fout" class="ut-rows" style="margin-top:8px"></div>
+</div>
+
+<!-- ============ HMAC ============ -->
+<div class="panel ut-pane hidden" data-pane="hmac">
+  <div class="grid grid-2">
+    <div><label class="card-label">消息</label><textarea id="hmac-msg" rows="4"></textarea></div>
+    <div>
+      <label class="card-label">密钥</label><input id="hmac-key" placeholder="HMAC key">
+      <label class="card-label" style="margin-top:10px">算法</label>
+      <select id="hmac-algo"><option>SHA-256</option><option>SHA-1</option><option>SHA-384</option><option>SHA-512</option></select>
+      <button id="hmac-go" style="margin-top:12px">计算 HMAC</button>
+    </div>
+  </div>
+  <div id="hmac-out" class="ut-rows" style="margin-top:12px"></div>
+</div>
+
+<!-- ============ 加密 / 密码学 ============ -->
+<div class="panel ut-pane hidden" data-pane="crypto">
+  <div class="ut-sub">
+    <a class="ut-subtab active" data-sub="aes">AES-256-GCM</a>
+    <a class="ut-subtab" data-sub="classic">经典密码</a>
+    <a class="ut-subtab" data-sub="xor">XOR</a>
+  </div>
+
+  <div class="ut-subpane" data-subpane="aes">
+    <p class="stat-sub" style="margin-top:0">AES-256-GCM + PBKDF2(SHA-256, 20 万次)。密文为 base64，内含随机 salt(16B)+iv(12B)，解密需相同口令。</p>
+    <div class="ut-bar">
+      <input id="aes-pass" type="password" placeholder="口令" style="width:240px">
+      <button id="aes-enc">加密 →</button>
+      <button id="aes-dec" class="ghost">← 解密</button>
+      <label class="trust" style="color:var(--muted)"><input type="checkbox" id="aes-show"> 显示口令</label>
+    </div>
+    <label class="card-label">明文 / 密文</label>
+    <textarea id="aes-in" rows="4"></textarea>
+    <label class="card-label" style="margin-top:10px">结果</label>
+    <textarea id="aes-out" rows="4" readonly placeholder="结果"></textarea>
+  </div>
+
+  <div class="ut-subpane hidden" data-subpane="classic">
+    <div class="ut-bar">
+      <select id="cc-type">
+        <option value="caesar">凯撒密码（位移）</option>
+        <option value="rot13">ROT13</option>
+        <option value="atbash">Atbash（镜像）</option>
+        <option value="vigenere">维吉尼亚密码</option>
+      </select>
+      <label class="card-label" id="cc-shift-l" style="margin:0">位移 <b id="cc-shift-v" style="color:var(--text)">3</b></label>
+      <input id="cc-shift" type="range" min="1" max="25" value="3" style="width:160px">
+      <input id="cc-key" placeholder="密钥（维吉尼亚）" style="width:180px;display:none">
+      <button id="cc-enc">加密 →</button>
+      <button id="cc-dec" class="ghost">← 解密</button>
+    </div>
+    <label class="card-label">输入</label>
+    <textarea id="cc-in" rows="4"></textarea>
+    <label class="card-label" style="margin-top:10px">输出</label>
+    <textarea id="cc-out" rows="4" readonly></textarea>
+  </div>
+
+  <div class="ut-subpane hidden" data-subpane="xor">
+    <p class="stat-sub" style="margin-top:0">对每个字节做 XOR。密钥循环使用；输出为 Hex。解密时输入 Hex 即可还原。</p>
+    <div class="ut-bar">
+      <input id="xor-key" placeholder="密钥（文本）" style="width:240px">
+      <button id="xor-enc">文本 → XOR(Hex)</button>
+      <button id="xor-dec" class="ghost">XOR(Hex) → 文本</button>
+    </div>
+    <label class="card-label">输入</label>
+    <textarea id="xor-in" rows="4"></textarea>
+    <label class="card-label" style="margin-top:10px">输出</label>
+    <textarea id="xor-out" rows="4" readonly></textarea>
+  </div>
+</div>
+
+<!-- ============ JWT ============ -->
+<div class="panel ut-pane hidden" data-pane="jwt">
+  <label class="card-label">JWT（粘贴 token）</label>
+  <textarea id="jwt-in" rows="3" placeholder="eyJhbGciOi..."></textarea>
+  <div class="grid grid-2" style="margin-top:12px">
+    <div><div class="card-label">Header</div><pre id="jwt-head" class="ut-pre"></pre></div>
+    <div><div class="card-label">Payload</div><pre id="jwt-body" class="ut-pre"></pre></div>
+  </div>
+  <div id="jwt-meta" class="ut-rows" style="margin-top:10px"></div>
+  <hr class="ut-hr">
+  <div class="ut-bar">
+    <input id="jwt-secret" placeholder="HS256 密钥（可选，校验签名）" style="width:280px">
+    <button id="jwt-verify" class="ghost">校验 HS256 签名</button>
+    <span id="jwt-verify-r" class="stat-sub"></span>
+  </div>
+</div>
+
+<!-- ============ 密码生成 ============ -->
+<div class="panel ut-pane hidden" data-pane="pass">
+  <div class="ut-sub">
+    <a class="ut-subtab active" data-sub="rnd">随机密码</a>
+    <a class="ut-subtab" data-sub="phrase">口令短语</a>
+    <a class="ut-subtab" data-sub="pin">PIN 码</a>
+  </div>
+
+  <div class="ut-subpane" data-subpane="rnd">
+    <div class="ut-bar">
+      <label class="card-label" style="margin:0">长度 <b id="pw-len-v" style="color:var(--text)">16</b></label>
+      <input id="pw-len" type="range" min="6" max="128" value="16" style="width:220px">
+      <label class="trust" style="color:var(--muted)"><input type="checkbox" id="pw-upper" checked> 大写</label>
+      <label class="trust" style="color:var(--muted)"><input type="checkbox" id="pw-lower" checked> 小写</label>
+      <label class="trust" style="color:var(--muted)"><input type="checkbox" id="pw-digit" checked> 数字</label>
+      <label class="trust" style="color:var(--muted)"><input type="checkbox" id="pw-sym" checked> 符号</label>
+      <label class="trust" style="color:var(--muted)"><input type="checkbox" id="pw-amb" checked> 排除易混字符</label>
+      <label class="card-label" style="margin:0">数量</label><input id="pw-count" type="number" value="5" min="1" max="50" style="width:70px">
+      <button id="pw-go">生成</button>
+    </div>
+    <div id="pw-strength" class="ut-strength"></div>
+    <div id="pw-out" class="ut-rows" style="margin-top:10px"></div>
+  </div>
+
+  <div class="ut-subpane hidden" data-subpane="phrase">
+    <div class="ut-bar">
+      <label class="card-label" style="margin:0">单词数</label><input id="ph-words" type="number" value="4" min="2" max="12" style="width:70px">
+      <label class="card-label" style="margin:0">分隔符</label><input id="ph-sep" value="-" style="width:60px">
+      <label class="trust" style="color:var(--muted)"><input type="checkbox" id="ph-cap" checked> 首字母大写</label>
+      <label class="trust" style="color:var(--muted)"><input type="checkbox" id="ph-num" checked> 追加数字</label>
+      <label class="card-label" style="margin:0">数量</label><input id="ph-count" type="number" value="5" min="1" max="30" style="width:70px">
+      <button id="ph-go">生成</button>
+    </div>
+    <div id="ph-out" class="ut-rows" style="margin-top:10px"></div>
+  </div>
+
+  <div class="ut-subpane hidden" data-subpane="pin">
+    <div class="ut-bar">
+      <label class="card-label" style="margin:0">位数</label><input id="pin-len" type="number" value="6" min="3" max="12" style="width:70px">
+      <label class="card-label" style="margin:0">数量</label><input id="pin-count" type="number" value="8" min="1" max="50" style="width:70px">
+      <button id="pin-go">生成</button>
+    </div>
+    <div id="pin-out" class="ut-rows" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- ============ 文本处理 ============ -->
+<div class="panel ut-pane hidden" data-pane="text">
+  <div class="ut-bar" style="flex-wrap:wrap">
+    <button class="ghost" data-tx="upper">大写</button>
+    <button class="ghost" data-tx="lower">小写</button>
+    <button class="ghost" data-tx="title">Title Case</button>
+    <button class="ghost" data-tx="camel">camelCase</button>
+    <button class="ghost" data-tx="pascal">PascalCase</button>
+    <button class="ghost" data-tx="snake">snake_case</button>
+    <button class="ghost" data-tx="kebab">kebab-case</button>
+    <button class="ghost" data-tx="const">CONST_CASE</button>
+    <button class="ghost" data-tx="slug">slugify</button>
+    <button class="ghost" data-tx="reverse">反转字符</button>
+  </div>
+  <div class="ut-bar" style="flex-wrap:wrap">
+    <button class="ghost" data-tx="sortAsc">行升序</button>
+    <button class="ghost" data-tx="sortDesc">行降序</button>
+    <button class="ghost" data-tx="sortNum">数字排序</button>
+    <button class="ghost" data-tx="uniq">去重</button>
+    <button class="ghost" data-tx="revLines">反转行序</button>
+    <button class="ghost" data-tx="shuffle">打乱行</button>
+    <button class="ghost" data-tx="trim">去首尾空格</button>
+    <button class="ghost" data-tx="noEmpty">删空行</button>
+    <button class="ghost" data-tx="number">加行号</button>
+  </div>
+  <label class="card-label">输入</label>
+  <textarea id="tx-in" rows="6" placeholder="在此输入文本"></textarea>
+  <div id="tx-stat" class="ut-stat"></div>
+  <label class="card-label" style="margin-top:10px">输出</label>
+  <textarea id="tx-out" rows="6" readonly></textarea>
+  <hr class="ut-hr">
+  <div class="ut-bar">
+    <input id="tx-find" placeholder="查找（支持正则）" style="width:220px">
+    <input id="tx-repl" placeholder="替换为" style="width:220px">
+    <label class="trust" style="color:var(--muted)"><input type="checkbox" id="tx-re"> 正则</label>
+    <label class="trust" style="color:var(--muted)"><input type="checkbox" id="tx-gi" checked> 全局</label>
+    <button id="tx-replace">替换</button>
+  </div>
+</div>
+
+<!-- ============ 正则测试 ============ -->
+<div class="panel ut-pane hidden" data-pane="regex">
+  <div class="ut-bar">
+    <span class="stat-sub">/</span>
+    <input id="re-pat" placeholder="正则表达式" style="flex:1;min-width:200px">
+    <span class="stat-sub">/</span>
+    <input id="re-flags" value="g" placeholder="flags" style="width:80px">
+  </div>
+  <label class="card-label">测试文本</label>
+  <textarea id="re-text" rows="5" placeholder="在此粘贴要匹配的文本"></textarea>
+  <div id="re-info" class="stat-sub" style="margin-top:8px"></div>
+  <label class="card-label" style="margin-top:8px">高亮结果</label>
+  <pre id="re-hl" class="ut-pre"></pre>
+  <div id="re-groups" class="ut-rows" style="margin-top:8px"></div>
+</div>
+
+<!-- ============ JSON / 数据 ============ -->
+<div class="panel ut-pane hidden" data-pane="json">
+  <div class="ut-bar" style="flex-wrap:wrap">
+    <button id="js-format">格式化</button>
+    <button id="js-min" class="ghost">压缩</button>
+    <button id="js-sort" class="ghost">键排序</button>
+    <button id="js-esc" class="ghost">转义为字符串</button>
+    <button id="js-unesc" class="ghost">反转义</button>
+    <button id="js-q2j" class="ghost">Query → JSON</button>
+    <button id="js-j2q" class="ghost">JSON → Query</button>
+  </div>
+  <label class="card-label">输入</label>
+  <textarea id="js-in" rows="7" placeholder='{"hello":"world"} 或 a=1&b=2'></textarea>
+  <div id="js-info" class="stat-sub" style="margin-top:8px"></div>
+  <label class="card-label" style="margin-top:8px">输出</label>
+  <textarea id="js-out" rows="7" readonly></textarea>
+</div>
+
+<!-- ============ 颜色转换 ============ -->
+<div class="panel ut-pane hidden" data-pane="color">
+  <div class="ut-bar">
+    <input type="color" id="col-pick" value="#6d5efc" style="width:56px;height:40px;padding:2px;cursor:pointer">
+    <input id="col-in" value="#6d5efc" placeholder="#hex / rgb(...) / 颜色名" style="width:260px">
+    <button id="col-go">转换</button>
+  </div>
+  <div id="col-sw" class="ut-swatch"></div>
+  <div id="col-out" class="ut-rows" style="margin-top:12px"></div>
+</div>
+
+<!-- ============ 网络工具 ============ -->
+<div class="panel ut-pane hidden" data-pane="net">
+  <div class="ut-sub">
+    <a class="ut-subtab active" data-sub="cidr">CIDR / 子网</a>
+    <a class="ut-subtab" data-sub="ipint">IP ↔ 整数</a>
+    <a class="ut-subtab" data-sub="url">URL 解析</a>
+    <a class="ut-subtab" data-sub="ua">UA 解析</a>
+  </div>
+  <div class="ut-subpane" data-subpane="cidr">
+    <div class="ut-bar"><input id="cidr-in" value="192.168.1.0/24" placeholder="192.168.1.0/24" style="width:240px"><button id="cidr-go">计算</button></div>
+    <div id="cidr-out" class="ut-rows" style="margin-top:10px"></div>
+  </div>
+  <div class="ut-subpane hidden" data-subpane="ipint">
+    <div class="ut-bar"><input id="ii-in" placeholder="192.168.1.1 或 3232235777" style="width:260px"><button id="ii-2int" class="ghost">IP → 整数</button><button id="ii-2ip" class="ghost">整数 → IP</button></div>
+    <div id="ii-out" class="ut-rows" style="margin-top:10px"></div>
+  </div>
+  <div class="ut-subpane hidden" data-subpane="url">
+    <div class="ut-bar"><input id="url-in" placeholder="https://user@host:8080/path?a=1&b=2#frag" style="flex:1;min-width:240px"><button id="url-go">解析</button></div>
+    <div id="url-out" class="ut-rows" style="margin-top:10px"></div>
+  </div>
+  <div class="ut-subpane hidden" data-subpane="ua">
+    <div class="ut-bar"><button id="ua-me" class="ghost">用当前浏览器 UA</button></div>
+    <textarea id="ua-in" rows="3" placeholder="粘贴 User-Agent 字符串"></textarea>
+    <div class="ut-bar" style="margin-top:8px"><button id="ua-go">解析</button></div>
+    <div id="ua-out" class="ut-rows" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- ============ 时间戳 ============ -->
+<div class="panel ut-pane hidden" data-pane="time">
+  <div class="ut-bar">
+    <input id="ts-in" placeholder="Unix 秒/毫秒 或 日期字符串" style="width:280px">
+    <button id="ts-parse">解析</button>
+    <button id="ts-now" class="ghost">当前时间</button>
+  </div>
+  <div id="ts-out" class="ut-rows" style="margin-top:10px"></div>
+  <div id="ts-live" class="stat-sub" style="margin-top:8px"></div>
+</div>
+
+<!-- ============ 生成器 ============ -->
+<div class="panel ut-pane hidden" data-pane="gen">
+  <div class="ut-sub">
+    <a class="ut-subtab active" data-sub="uuid">UUID</a>
+    <a class="ut-subtab" data-sub="nano">NanoID</a>
+    <a class="ut-subtab" data-sub="lorem">Lorem</a>
+    <a class="ut-subtab" data-sub="rand">随机数</a>
+  </div>
+  <div class="ut-subpane" data-subpane="uuid">
+    <div class="ut-bar"><label class="card-label" style="margin:0">数量</label><input id="uuid-n" type="number" value="5" min="1" max="50" style="width:70px"><button id="uuid-go">生成 UUID v4</button></div>
+    <div id="uuid-out" class="ut-rows" style="margin-top:10px"></div>
+  </div>
+  <div class="ut-subpane hidden" data-subpane="nano">
+    <div class="ut-bar">
+      <label class="card-label" style="margin:0">长度</label><input id="nano-len" type="number" value="21" min="4" max="64" style="width:70px">
+      <input id="nano-alpha" value="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-" style="flex:1;min-width:200px">
+      <label class="card-label" style="margin:0">数量</label><input id="nano-n" type="number" value="5" min="1" max="50" style="width:70px">
+      <button id="nano-go">生成</button>
+    </div>
+    <div id="nano-out" class="ut-rows" style="margin-top:10px"></div>
+  </div>
+  <div class="ut-subpane hidden" data-subpane="lorem">
+    <div class="ut-bar">
+      <select id="lorem-unit"><option value="p">段落</option><option value="s">句子</option><option value="w">单词</option></select>
+      <label class="card-label" style="margin:0">数量</label><input id="lorem-n" type="number" value="3" min="1" max="50" style="width:70px">
+      <button id="lorem-go">生成</button>
+    </div>
+    <textarea id="lorem-out" rows="7" readonly style="margin-top:10px"></textarea>
+  </div>
+  <div class="ut-subpane hidden" data-subpane="rand">
+    <div class="ut-bar">
+      <label class="card-label" style="margin:0">最小</label><input id="rn-min" type="number" value="1" style="width:100px">
+      <label class="card-label" style="margin:0">最大</label><input id="rn-max" type="number" value="100" style="width:100px">
+      <label class="card-label" style="margin:0">数量</label><input id="rn-n" type="number" value="10" min="1" max="200" style="width:80px">
+      <button id="rn-go">生成</button>
+    </div>
+    <textarea id="rn-out" rows="4" readonly style="margin-top:10px"></textarea>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.hidden{display:none!important}
+.ut-tabs{flex-wrap:wrap;gap:8px}
+.ut-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.ut-hr{border:0;border-top:1px solid var(--line);margin:18px 0}
+.ut-rows{display:flex;flex-direction:column;gap:8px}
+.rr{display:flex;align-items:center;gap:10px;min-width:0}
+.rr .lab{flex:0 0 auto;width:120px;color:var(--muted);font-size:12.5px;text-align:right}
+.rr code{flex:1 1 auto;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;color:var(--text);background:var(--inset);padding:9px 12px;border-radius:8px;word-break:break-all;white-space:pre-wrap;user-select:all}
+.rr .cp{flex:0 0 auto;cursor:pointer;color:var(--c-cyan);font-size:12px;padding:4px 8px;border-radius:6px;user-select:none}
+.rr .cp:hover{background:var(--inset)}
+.ut-pre{background:var(--inset);border-radius:10px;padding:12px;font-size:12.5px;color:var(--text);overflow:auto;max-height:300px;margin:6px 0 0;white-space:pre-wrap;word-break:break-all}
+.ut-pre mark{background:var(--c-cyan);color:#08131f;border-radius:3px;padding:0 1px}
+.ut-sub{display:flex;gap:6px;margin-bottom:14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.ut-subtab{cursor:pointer;padding:7px 14px;font-size:13px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;user-select:none}
+.ut-subtab:hover{color:var(--text)}
+.ut-subtab.active{color:var(--text);border-bottom-color:var(--c-purple)}
+.ut-stat{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:12.5px;color:var(--muted)}
+.ut-stat b{color:var(--text)}
+.ut-strength{height:6px;border-radius:4px;background:var(--inset);margin-top:12px;overflow:hidden;position:relative}
+.ut-strength::after{content:'';position:absolute;left:0;top:0;bottom:0;width:var(--w,0%);background:var(--sc,var(--c-green));transition:width .25s,background .25s}
+.ut-strength-txt{font-size:12px;color:var(--muted);margin-top:6px}
+.ut-swatch{height:64px;border-radius:12px;margin-top:12px;border:1px solid var(--line);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+</style>
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const encT = new TextEncoder(), decT = new TextDecoder();
+const toHex = buf => [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+const el = (tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;};
+
+// ---- 顶层标签 ----
+$$('#ut-tabs .chip').forEach(c => c.addEventListener('click', () => {
+  $$('#ut-tabs .chip').forEach(x=>x.classList.remove('active')); c.classList.add('active');
+  $$('.ut-pane').forEach(p => p.classList.toggle('hidden', p.dataset.pane !== c.dataset.tab));
+}));
+// ---- 子标签 ----
+$$('.ut-sub').forEach(sub => sub.querySelectorAll('.ut-subtab').forEach(t => t.addEventListener('click', () => {
+  sub.querySelectorAll('.ut-subtab').forEach(x=>x.classList.remove('active')); t.classList.add('active');
+  const pane = sub.parentElement;
+  pane.querySelectorAll('.ut-subpane').forEach(p => p.classList.toggle('hidden', p.dataset.subpane !== t.dataset.sub));
+})));
+
+// ---- 通用：安全构建复制行 ----
+function copyChip(getText){
+  const b = el('span','cp','复制');
+  b.addEventListener('click', ()=>{
+    Promise.resolve(navigator.clipboard.writeText(typeof getText==='function'?getText():getText))
+      .then(()=>{b.textContent='已复制';setTimeout(()=>b.textContent='复制',1000);}).catch(()=>{});
+  });
+  return b;
+}
+function mkRow(label, value){
+  const r = el('div','rr');
+  if(label!=null) r.appendChild(el('span','lab',label));
+  const c = el('code',null,value); r.appendChild(c);
+  r.appendChild(copyChip(()=>c.textContent));
+  return r;
+}
+function setRows(box, pairs){ box.textContent=''; pairs.forEach(p => box.appendChild(Array.isArray(p)?mkRow(p[0],p[1]):mkRow(null,p))); }
+
+/* ================= 编码/解码 ================= */
+const b64e = s => btoa(unescape(encodeURIComponent(s)));
+const b64d = s => decodeURIComponent(escape(atob(s)));
+const b64ue = s => b64e(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const b64ud = s => { s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4)s+='='; return b64d(s); };
+const hxe = s => [...encT.encode(s)].map(b=>b.toString(16).padStart(2,'0')).join('');
+const hxd = h => decT.decode(Uint8Array.from((h.replace(/[^0-9a-fA-F]/g,'').match(/.{1,2}/g)||[]), x=>parseInt(x,16)));
+const htmle = s => s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const htmld = s => { const d=el('textarea'); d.innerHTML=s; return d.value; };
+const unie = s => [...s].map(c=>{const n=c.codePointAt(0);return n>0xffff?'\\u{'+n.toString(16)+'}':'\\u'+n.toString(16).padStart(4,'0');}).join('');
+const unid = s => s.replace(/\\u\{([0-9a-fA-F]+)\}/g,(_,h)=>String.fromCodePoint(parseInt(h,16))).replace(/\\u([0-9a-fA-F]{4})/g,(_,h)=>String.fromCharCode(parseInt(h,16)));
+const asce = s => [...encT.encode(s)].join(' ');
+const ascd = s => decT.decode(Uint8Array.from(s.trim().split(/\s+/).filter(Boolean).map(Number)));
+const bine = s => [...encT.encode(s)].map(b=>b.toString(2).padStart(8,'0')).join(' ');
+const bind = s => decT.decode(Uint8Array.from(s.trim().split(/\s+/).filter(Boolean).map(b=>parseInt(b,2))));
+const rot13 = s => s.replace(/[a-zA-Z]/g,c=>String.fromCharCode((c<='Z'?90:122)>=(c=c.charCodeAt(0)+13)?c:c-26));
+const B32='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+function b32e(str){const b=encT.encode(str);let bits=0,val=0,out='';for(let i=0;i<b.length;i++){val=(val<<8)|b[i];bits+=8;while(bits>=5){out+=B32[(val>>>(bits-5))&31];bits-=5;}}if(bits>0)out+=B32[(val<<(5-bits))&31];while(out.length%8)out+='=';return out;}
+function b32d(s){s=s.replace(/=+$/,'').toUpperCase().replace(/[^A-Z2-7]/g,'');let bits=0,val=0,out=[];for(const ch of s){val=(val<<5)|B32.indexOf(ch);bits+=5;if(bits>=8){out.push((val>>>(bits-8))&255);bits-=8;}}return decT.decode(new Uint8Array(out));}
+const MORSE={"A":".-","B":"-...","C":"-.-.","D":"-..","E":".","F":"..-.","G":"--.","H":"....","I":"..","J":".---","K":"-.-","L":".-..","M":"--","N":"-.","O":"---","P":".--.","Q":"--.-","R":".-.","S":"...","T":"-","U":"..-","V":"...-","W":".--","X":"-..-","Y":"-.--","Z":"--..","0":"-----","1":".----","2":"..---","3":"...--","4":"....-","5":".....","6":"-....","7":"--...","8":"---..","9":"----.",".":".-.-.-",",":"--..--","?":"..--..","'":".----.","!":"-.-.--","/":"-..-.","(":"-.--.",")":"-.--.-","&":".-...",":":"---...",";":"-.-.-.","=":"-...-","+":".-.-.","-":"-....-","_":"..--.-","\"":".-..-.","$":"...-..-","@":".--.-.","":""," ":"/"};
+const MORSE_R=Object.fromEntries(Object.entries(MORSE).map(([k,v])=>[v,k]));
+const morsee = s => [...s.toUpperCase()].map(c=>MORSE[c]!=null?MORSE[c]:c).join(' ');
+const morsed = s => s.trim().split(/\s+/).map(t=>t==='/'?' ':(MORSE_R[t]||'')).join('');
+const CODECS={base64:[b64e,b64d],base64url:[b64ue,b64ud],url:[encodeURIComponent,decodeURIComponent],hex:[hxe,hxd],base32:[b32e,b32d],html:[htmle,htmld],unicode:[unie,unid],ascii:[asce,ascd],binary:[bine,bind],rot13:[rot13,rot13],morse:[morsee,morsed]};
+function doEnc(dir){
+  const t=$('#enc-type').value, v=$('#enc-in').value;
+  try{ $('#enc-out').value = CODECS[t][dir?0:1](v); }
+  catch(e){ $('#enc-out').value='× 处理失败：'+e.message; }
+}
+$('#enc-go').onclick=()=>doEnc(true);
+$('#dec-go').onclick=()=>doEnc(false);
+$('#enc-swap').onclick=()=>{ $('#enc-in').value=$('#enc-out').value; $('#enc-out').value=''; };
+$('#enc-all').onclick=()=>{
+  const v=$('#enc-in').value; const box=$('#enc-allbox');
+  const safe=(f)=>{try{return f(v);}catch(e){return '（失败）';}};
+  setRows(box,[['Base64',safe(b64e)],['Base64URL',safe(b64ue)],['URL',safe(encodeURIComponent)],['Hex',safe(hxe)],['Base32',safe(b32e)],['HTML实体',safe(htmle)],['Unicode',safe(unie)],['二进制',safe(bine)],['ASCII',safe(asce)],['摩尔斯',safe(morsee)]]);
+};
+
+/* ================= 哈希 ================= */
+function md5(str){
+  function rh(n){var s='',j=0;for(;j<4;j++)s+=('0'+((n>>(j*8))&255).toString(16)).slice(-2);return s;}
+  function ad(x,y){var l=(x&65535)+(y&65535);return(((x>>16)+(y>>16)+(l>>16))<<16)|(l&65535);}
+  function rl(n,c){return(n<<c)|(n>>>(32-c));}
+  function cm(q,a,b,x,s,t){return ad(rl(ad(ad(a,q),ad(x,t)),s),b);}
+  function ff(a,b,c,d,x,s,t){return cm((b&c)|((~b)&d),a,b,x,s,t);}
+  function gg(a,b,c,d,x,s,t){return cm((b&d)|(c&(~d)),a,b,x,s,t);}
+  function hh(a,b,c,d,x,s,t){return cm(b^c^d,a,b,x,s,t);}
+  function ii(a,b,c,d,x,s,t){return cm(c^(b|(~d)),a,b,x,s,t);}
+  var u=unescape(encodeURIComponent(str)),n=u.length,x=[],i;
+  for(i=0;i<n;i++)x[i>>2]=(x[i>>2]||0)|(u.charCodeAt(i)<<((i%4)*8));
+  x[n>>2]=(x[n>>2]||0)|(0x80<<((n%4)*8)); x[(((n+8)>>6)*16)+14]=n*8;
+  var a=1732584193,b=-271733879,c=-1732584194,d=271733878;
+  for(i=0;i<x.length;i+=16){var oa=a,ob=b,oc=c,od=d;
+    a=ff(a,b,c,d,x[i]||0,7,-680876936);d=ff(d,a,b,c,x[i+1]||0,12,-389564586);c=ff(c,d,a,b,x[i+2]||0,17,606105819);b=ff(b,c,d,a,x[i+3]||0,22,-1044525330);
+    a=ff(a,b,c,d,x[i+4]||0,7,-176418897);d=ff(d,a,b,c,x[i+5]||0,12,1200080426);c=ff(c,d,a,b,x[i+6]||0,17,-1473231341);b=ff(b,c,d,a,x[i+7]||0,22,-45705983);
+    a=ff(a,b,c,d,x[i+8]||0,7,1770035416);d=ff(d,a,b,c,x[i+9]||0,12,-1958414417);c=ff(c,d,a,b,x[i+10]||0,17,-42063);b=ff(b,c,d,a,x[i+11]||0,22,-1990404162);
+    a=ff(a,b,c,d,x[i+12]||0,7,1804603682);d=ff(d,a,b,c,x[i+13]||0,12,-40341101);c=ff(c,d,a,b,x[i+14]||0,17,-1502002290);b=ff(b,c,d,a,x[i+15]||0,22,1236535329);
+    a=gg(a,b,c,d,x[i+1]||0,5,-165796510);d=gg(d,a,b,c,x[i+6]||0,9,-1069501632);c=gg(c,d,a,b,x[i+11]||0,14,643717713);b=gg(b,c,d,a,x[i]||0,20,-373897302);
+    a=gg(a,b,c,d,x[i+5]||0,5,-701558691);d=gg(d,a,b,c,x[i+10]||0,9,38016083);c=gg(c,d,a,b,x[i+15]||0,14,-660478335);b=gg(b,c,d,a,x[i+4]||0,20,-405537848);
+    a=gg(a,b,c,d,x[i+9]||0,5,568446438);d=gg(d,a,b,c,x[i+14]||0,9,-1019803690);c=gg(c,d,a,b,x[i+3]||0,14,-187363961);b=gg(b,c,d,a,x[i+8]||0,20,1163531501);
+    a=gg(a,b,c,d,x[i+13]||0,5,-1444681467);d=gg(d,a,b,c,x[i+2]||0,9,-51403784);c=gg(c,d,a,b,x[i+7]||0,14,1735328473);b=gg(b,c,d,a,x[i+12]||0,20,-1926607734);
+    a=hh(a,b,c,d,x[i+5]||0,4,-378558);d=hh(d,a,b,c,x[i+8]||0,11,-2022574463);c=hh(c,d,a,b,x[i+11]||0,16,1839030562);b=hh(b,c,d,a,x[i+14]||0,23,-35309556);
+    a=hh(a,b,c,d,x[i+1]||0,4,-1530992060);d=hh(d,a,b,c,x[i+4]||0,11,1272893353);c=hh(c,d,a,b,x[i+7]||0,16,-155497632);b=hh(b,c,d,a,x[i+10]||0,23,-1094730640);
+    a=hh(a,b,c,d,x[i+13]||0,4,681279174);d=hh(d,a,b,c,x[i]||0,11,-358537222);c=hh(c,d,a,b,x[i+3]||0,16,-722521979);b=hh(b,c,d,a,x[i+6]||0,23,76029189);
+    a=hh(a,b,c,d,x[i+9]||0,4,-640364487);d=hh(d,a,b,c,x[i+12]||0,11,-421815835);c=hh(c,d,a,b,x[i+15]||0,16,530742520);b=hh(b,c,d,a,x[i+2]||0,23,-995338651);
+    a=ii(a,b,c,d,x[i]||0,6,-198630844);d=ii(d,a,b,c,x[i+7]||0,10,1126891415);c=ii(c,d,a,b,x[i+14]||0,15,-1416354905);b=ii(b,c,d,a,x[i+5]||0,21,-57434055);
+    a=ii(a,b,c,d,x[i+12]||0,6,1700485571);d=ii(d,a,b,c,x[i+3]||0,10,-1894986606);c=ii(c,d,a,b,x[i+10]||0,15,-1051523);b=ii(b,c,d,a,x[i+1]||0,21,-2054922799);
+    a=ii(a,b,c,d,x[i+8]||0,6,1873313359);d=ii(d,a,b,c,x[i+15]||0,10,-30611744);c=ii(c,d,a,b,x[i+6]||0,15,-1560198380);b=ii(b,c,d,a,x[i+13]||0,21,1309151649);
+    a=ii(a,b,c,d,x[i+4]||0,6,-145523070);d=ii(d,a,b,c,x[i+11]||0,10,-1120210379);c=ii(c,d,a,b,x[i+2]||0,15,718787259);b=ii(b,c,d,a,x[i+9]||0,21,-343485551);
+    a=ad(a,oa);b=ad(b,ob);c=ad(c,oc);d=ad(d,od);}
+  return rh(a)+rh(b)+rh(c)+rh(d);
+}
+const CRC_TABLE=(()=>{let t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(buf){let c=0xFFFFFFFF;for(let i=0;i<buf.length;i++)c=CRC_TABLE[(c^buf[i])&0xFF]^(c>>>8);return((c^0xFFFFFFFF)>>>0).toString(16).padStart(8,'0');}
+const sha=(algo,buf)=>crypto.subtle.digest(algo,buf).then(toHex);
+async function doHash(){
+  const v=$('#hash-in').value, buf=encT.encode(v);
+  const rows=[['MD5',md5(v)],['CRC32',crc32(buf)],['SHA-1',await sha('SHA-1',buf)],['SHA-256',await sha('SHA-256',buf)],['SHA-384',await sha('SHA-384',buf)],['SHA-512',await sha('SHA-512',buf)]];
+  setRows($('#hash-out'),rows);
+}
+$('#hash-in').addEventListener('input',doHash);
+// 文件哈希
+async function hashFile(file){
+  $('#hash-fmeta').textContent='计算中… '+file.name+'（'+fmtBytes(file.size)+'）';
+  const buf=new Uint8Array(await file.arrayBuffer());
+  const rows=[['文件名',file.name],['大小',fmtBytes(file.size)+'（'+file.size+' 字节）'],['MD5',md5Bytes(buf)],['CRC32',crc32(buf)],['SHA-1',await sha('SHA-1',buf)],['SHA-256',await sha('SHA-256',buf)]];
+  $('#hash-fmeta').textContent='';
+  setRows($('#hash-fout'),rows);
+}
+function md5Bytes(buf){ // md5() 走字符串路径，此处按 latin1 还原
+  let s=''; for(let i=0;i<buf.length;i++)s+=String.fromCharCode(buf[i]); return md5_raw(s);
+}
+function md5_raw(u){ // 与 md5 相同但不做 UTF-8 变换（输入已是字节字符串）
+  const orig=md5; // 复用位运算：借助内部实现需要原始，简单起见重算
+  return md5FromLatin1(u);
+}
+function md5FromLatin1(u){
+  // 复制 md5 主体，仅省略 encodeURIComponent
+  function rh(n){var s='',j=0;for(;j<4;j++)s+=('0'+((n>>(j*8))&255).toString(16)).slice(-2);return s;}
+  function ad(x,y){var l=(x&65535)+(y&65535);return(((x>>16)+(y>>16)+(l>>16))<<16)|(l&65535);}
+  function rl(n,c){return(n<<c)|(n>>>(32-c));}
+  function cm(q,a,b,x,s,t){return ad(rl(ad(ad(a,q),ad(x,t)),s),b);}
+  function ff(a,b,c,d,x,s,t){return cm((b&c)|((~b)&d),a,b,x,s,t);}
+  function gg(a,b,c,d,x,s,t){return cm((b&d)|(c&(~d)),a,b,x,s,t);}
+  function hh(a,b,c,d,x,s,t){return cm(b^c^d,a,b,x,s,t);}
+  function ii(a,b,c,d,x,s,t){return cm(c^(b|(~d)),a,b,x,s,t);}
+  var n=u.length,x=[],i;
+  for(i=0;i<n;i++)x[i>>2]=(x[i>>2]||0)|(u.charCodeAt(i)<<((i%4)*8));
+  x[n>>2]=(x[n>>2]||0)|(0x80<<((n%4)*8)); x[(((n+8)>>6)*16)+14]=n*8;
+  var a=1732584193,b=-271733879,c=-1732584194,d=271733878;
+  for(i=0;i<x.length;i+=16){var oa=a,ob=b,oc=c,od=d;
+    a=ff(a,b,c,d,x[i]||0,7,-680876936);d=ff(d,a,b,c,x[i+1]||0,12,-389564586);c=ff(c,d,a,b,x[i+2]||0,17,606105819);b=ff(b,c,d,a,x[i+3]||0,22,-1044525330);
+    a=ff(a,b,c,d,x[i+4]||0,7,-176418897);d=ff(d,a,b,c,x[i+5]||0,12,1200080426);c=ff(c,d,a,b,x[i+6]||0,17,-1473231341);b=ff(b,c,d,a,x[i+7]||0,22,-45705983);
+    a=ff(a,b,c,d,x[i+8]||0,7,1770035416);d=ff(d,a,b,c,x[i+9]||0,12,-1958414417);c=ff(c,d,a,b,x[i+10]||0,17,-42063);b=ff(b,c,d,a,x[i+11]||0,22,-1990404162);
+    a=ff(a,b,c,d,x[i+12]||0,7,1804603682);d=ff(d,a,b,c,x[i+13]||0,12,-40341101);c=ff(c,d,a,b,x[i+14]||0,17,-1502002290);b=ff(b,c,d,a,x[i+15]||0,22,1236535329);
+    a=gg(a,b,c,d,x[i+1]||0,5,-165796510);d=gg(d,a,b,c,x[i+6]||0,9,-1069501632);c=gg(c,d,a,b,x[i+11]||0,14,643717713);b=gg(b,c,d,a,x[i]||0,20,-373897302);
+    a=gg(a,b,c,d,x[i+5]||0,5,-701558691);d=gg(d,a,b,c,x[i+10]||0,9,38016083);c=gg(c,d,a,b,x[i+15]||0,14,-660478335);b=gg(b,c,d,a,x[i+4]||0,20,-405537848);
+    a=gg(a,b,c,d,x[i+9]||0,5,568446438);d=gg(d,a,b,c,x[i+14]||0,9,-1019803690);c=gg(c,d,a,b,x[i+3]||0,14,-187363961);b=gg(b,c,d,a,x[i+8]||0,20,1163531501);
+    a=gg(a,b,c,d,x[i+13]||0,5,-1444681467);d=gg(d,a,b,c,x[i+2]||0,9,-51403784);c=gg(c,d,a,b,x[i+7]||0,14,1735328473);b=gg(b,c,d,a,x[i+12]||0,20,-1926607734);
+    a=hh(a,b,c,d,x[i+5]||0,4,-378558);d=hh(d,a,b,c,x[i+8]||0,11,-2022574463);c=hh(c,d,a,b,x[i+11]||0,16,1839030562);b=hh(b,c,d,a,x[i+14]||0,23,-35309556);
+    a=hh(a,b,c,d,x[i+1]||0,4,-1530992060);d=hh(d,a,b,c,x[i+4]||0,11,1272893353);c=hh(c,d,a,b,x[i+7]||0,16,-155497632);b=hh(b,c,d,a,x[i+10]||0,23,-1094730640);
+    a=hh(a,b,c,d,x[i+13]||0,4,681279174);d=hh(d,a,b,c,x[i]||0,11,-358537222);c=hh(c,d,a,b,x[i+3]||0,16,-722521979);b=hh(b,c,d,a,x[i+6]||0,23,76029189);
+    a=hh(a,b,c,d,x[i+9]||0,4,-640364487);d=hh(d,a,b,c,x[i+12]||0,11,-421815835);c=hh(c,d,a,b,x[i+15]||0,16,530742520);b=hh(b,c,d,a,x[i+2]||0,23,-995338651);
+    a=ii(a,b,c,d,x[i]||0,6,-198630844);d=ii(d,a,b,c,x[i+7]||0,10,1126891415);c=ii(c,d,a,b,x[i+14]||0,15,-1416354905);b=ii(b,c,d,a,x[i+5]||0,21,-57434055);
+    a=ii(a,b,c,d,x[i+12]||0,6,1700485571);d=ii(d,a,b,c,x[i+3]||0,10,-1894986606);c=ii(c,d,a,b,x[i+10]||0,15,-1051523);b=ii(b,c,d,a,x[i+1]||0,21,-2054922799);
+    a=ii(a,b,c,d,x[i+8]||0,6,1873313359);d=ii(d,a,b,c,x[i+15]||0,10,-30611744);c=ii(c,d,a,b,x[i+6]||0,15,-1560198380);b=ii(b,c,d,a,x[i+13]||0,21,1309151649);
+    a=ii(a,b,c,d,x[i+4]||0,6,-145523070);d=ii(d,a,b,c,x[i+11]||0,10,-1120210379);c=ii(c,d,a,b,x[i+2]||0,15,718787259);b=ii(b,c,d,a,x[i+9]||0,21,-343485551);
+    a=ad(a,oa);b=ad(b,ob);c=ad(c,oc);d=ad(d,od);}
+  return rh(a)+rh(b)+rh(c)+rh(d);
+}
+function fmtBytes(n){const u=['B','KB','MB','GB'];let i=0;while(n>=1024&&i<3){n/=1024;i++;}return (i?n.toFixed(2):n)+' '+u[i];}
+$('#hash-file').addEventListener('change',e=>{if(e.target.files[0])hashFile(e.target.files[0]);});
+
+/* ================= HMAC ================= */
+$('#hmac-go').onclick=async()=>{
+  try{
+    const algo=$('#hmac-algo').value;
+    const key=await crypto.subtle.importKey('raw',encT.encode($('#hmac-key').value),{name:'HMAC',hash:algo},false,['sign']);
+    const sig=await crypto.subtle.sign('HMAC',key,encT.encode($('#hmac-msg').value));
+    setRows($('#hmac-out'),[['Hex',toHex(sig)],['Base64',btoa(String.fromCharCode(...new Uint8Array(sig)))]]);
+  }catch(e){ setRows($('#hmac-out'),[['错误','× '+e.message]]); }
+};
+
+/* ================= AES-GCM ================= */
+async function aesKey(pass,salt){
+  const km=await crypto.subtle.importKey('raw',encT.encode(pass),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+$('#aes-show').addEventListener('change',e=>$('#aes-pass').type=e.target.checked?'text':'password');
+$('#aes-enc').onclick=async()=>{
+  try{
+    const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+    const key=await aesKey($('#aes-pass').value,salt);
+    const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},key,encT.encode($('#aes-in').value)));
+    const out=new Uint8Array(28+ct.length); out.set(salt,0); out.set(iv,16); out.set(ct,28);
+    $('#aes-out').value=btoa(String.fromCharCode(...out));
+  }catch(e){ $('#aes-out').value='× '+e.message; }
+};
+$('#aes-dec').onclick=async()=>{
+  try{
+    const raw=Uint8Array.from(atob($('#aes-in').value.trim()),c=>c.charCodeAt(0));
+    const key=await aesKey($('#aes-pass').value,raw.slice(0,16));
+    const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:raw.slice(16,28)},key,raw.slice(28));
+    $('#aes-out').value=decT.decode(pt);
+  }catch(e){ $('#aes-out').value='× 解密失败（口令错误或密文损坏）'; }
+};
+
+/* ================= 经典密码 ================= */
+function caesar(s,n){return s.replace(/[a-z]/g,c=>String.fromCharCode((c.charCodeAt(0)-97+n+26)%26+97)).replace(/[A-Z]/g,c=>String.fromCharCode((c.charCodeAt(0)-65+n+26)%26+65));}
+function atbash(s){return s.replace(/[a-z]/g,c=>String.fromCharCode(219-c.charCodeAt(0))).replace(/[A-Z]/g,c=>String.fromCharCode(155-c.charCodeAt(0)));}
+function vigenere(s,key,dec){if(!key)return s;key=key.toLowerCase().replace(/[^a-z]/g,'');if(!key)return s;let ki=0;return s.replace(/[a-zA-Z]/g,c=>{const base=c<='Z'?65:97;const k=key.charCodeAt(ki%key.length)-97;ki++;const shift=dec?-k:k;return String.fromCharCode((c.charCodeAt(0)-base+shift+26)%26+base);});}
+$('#cc-shift').addEventListener('input',e=>$('#cc-shift-v').textContent=e.target.value);
+$('#cc-type').addEventListener('change',e=>{
+  const t=e.target.value;
+  $('#cc-shift').style.display=$('#cc-shift-l').style.display=(t==='caesar')?'':'none';
+  $('#cc-key').style.display=(t==='vigenere')?'':'none';
+});
+function ccRun(dec){
+  const t=$('#cc-type').value,v=$('#cc-in').value;let r=v;
+  if(t==='caesar'){const n=+$('#cc-shift').value;r=caesar(v,dec?-n:n);}
+  else if(t==='rot13')r=rot13(v);
+  else if(t==='atbash')r=atbash(v);
+  else if(t==='vigenere')r=vigenere(v,$('#cc-key').value,dec);
+  $('#cc-out').value=r;
+}
+$('#cc-enc').onclick=()=>ccRun(false);
+$('#cc-dec').onclick=()=>ccRun(true);
+
+/* ================= XOR ================= */
+function xorEnc(){
+  const key=encT.encode($('#xor-key').value),data=encT.encode($('#xor-in').value);
+  if(!key.length){$('#xor-out').value='× 请填写密钥';return;}
+  const out=new Uint8Array(data.length);for(let i=0;i<data.length;i++)out[i]=data[i]^key[i%key.length];
+  $('#xor-out').value=[...out].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function xorDec(){
+  const key=encT.encode($('#xor-key').value);
+  const data=Uint8Array.from(($('#xor-in').value.replace(/[^0-9a-fA-F]/g,'').match(/.{1,2}/g)||[]),h=>parseInt(h,16));
+  if(!key.length){$('#xor-out').value='× 请填写密钥';return;}
+  const out=new Uint8Array(data.length);for(let i=0;i<data.length;i++)out[i]=data[i]^key[i%key.length];
+  try{$('#xor-out').value=decT.decode(out);}catch(e){$('#xor-out').value='× 解码失败';}
+}
+$('#xor-enc').onclick=xorEnc;
+$('#xor-dec').onclick=xorDec;
+
+/* ================= JWT ================= */
+function parseJwt(){
+  const p=$('#jwt-in').value.trim().split('.');
+  try{
+    const h=JSON.parse(b64ud(p[0])),b=JSON.parse(b64ud(p[1]));
+    $('#jwt-head').textContent=JSON.stringify(h,null,2);
+    $('#jwt-body').textContent=JSON.stringify(b,null,2);
+    const meta=[];
+    if(h.alg)meta.push(['算法',h.alg]);
+    if(b.iat)meta.push(['签发时间',new Date(b.iat*1000).toLocaleString()]);
+    if(b.nbf)meta.push(['生效时间',new Date(b.nbf*1000).toLocaleString()]);
+    if(b.exp)meta.push(['过期时间',new Date(b.exp*1000).toLocaleString()+(b.exp*1000<Date.now()?'（已过期）':'（有效）')]);
+    if(b.sub)meta.push(['subject',String(b.sub)]);
+    if(b.iss)meta.push(['issuer',String(b.iss)]);
+    setRows($('#jwt-meta'),meta);
+  }catch(e){ $('#jwt-head').textContent=''; $('#jwt-body').textContent='× 解析失败：'+e.message; $('#jwt-meta').textContent=''; }
+}
+$('#jwt-in').addEventListener('input',parseJwt);
+$('#jwt-verify').onclick=async()=>{
+  const p=$('#jwt-in').value.trim().split('.');const sec=$('#jwt-secret').value;
+  if(p.length!==3){$('#jwt-verify-r').textContent='× token 格式不完整';return;}
+  try{
+    const key=await crypto.subtle.importKey('raw',encT.encode(sec),{name:'HMAC',hash:'SHA-256'},false,['sign']);
+    const sig=new Uint8Array(await crypto.subtle.sign('HMAC',key,encT.encode(p[0]+'.'+p[1])));
+    const b64=btoa(String.fromCharCode(...sig)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    const ok=b64===p[2];
+    $('#jwt-verify-r').textContent=ok?'✓ 签名有效（HS256）':'× 签名不匹配';
+    $('#jwt-verify-r').style.color=ok?'var(--c-green)':'var(--c-red)';
+  }catch(e){ $('#jwt-verify-r').textContent='× '+e.message; }
+};
+
+/* ================= 密码生成 ================= */
+function randInt(max){const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%max;}
+function pick(set){return set[randInt(set.length)];}
+$('#pw-len').addEventListener('input',e=>$('#pw-len-v').textContent=e.target.value);
+function genPass(){
+  const amb=$('#pw-amb').checked;
+  let up=amb?'ABCDEFGHJKLMNPQRSTUVWXYZ':'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let lo=amb?'abcdefghijkmnpqrstuvwxyz':'abcdefghijklmnopqrstuvwxyz';
+  let di=amb?'23456789':'0123456789';
+  let sy='!@#$%^&*()-_=+[]{}<>?';
+  let sets=[];
+  if($('#pw-upper').checked)sets.push(up);
+  if($('#pw-lower').checked)sets.push(lo);
+  if($('#pw-digit').checked)sets.push(di);
+  if($('#pw-sym').checked)sets.push(sy);
+  if(!sets.length)return null;
+  const all=sets.join(''),len=+$('#pw-len').value;
+  let out=sets.map(s=>pick(s)); // 保证每类至少一个
+  for(let i=out.length;i<len;i++)out.push(pick(all));
+  // 洗牌
+  for(let i=out.length-1;i>0;i--){const j=randInt(i+1);[out[i],out[j]]=[out[j],out[i]];}
+  return out.slice(0,len).join('');
+}
+function entropyBits(len){
+  let n=0;if($('#pw-upper').checked)n+=26;if($('#pw-lower').checked)n+=26;if($('#pw-digit').checked)n+=10;if($('#pw-sym').checked)n+=20;
+  return n?Math.round(len*Math.log2(n)):0;
+}
+function showStrength(){
+  const bits=entropyBits(+$('#pw-len').value);
+  const bar=$('#pw-strength');
+  const pct=Math.min(100,Math.round(bits/128*100));
+  let color='var(--c-red)',txt='弱';
+  if(bits>=100){color='var(--c-green)';txt='极强';}else if(bits>=70){color='var(--c-green)';txt='强';}else if(bits>=50){color='var(--c-yellow,#e0b341)';txt='中';}
+  bar.style.setProperty('--w',pct+'%');bar.style.setProperty('--sc',color);
+  let t=bar.nextElementSibling;if(!t||!t.classList.contains('ut-strength-txt')){t=el('div','ut-strength-txt');bar.after(t);}
+  t.textContent='熵约 '+bits+' bit · '+txt;
+}
+['pw-len','pw-upper','pw-lower','pw-digit','pw-sym'].forEach(id=>$('#'+id).addEventListener('input',showStrength));
+$('#pw-go').onclick=()=>{
+  showStrength();
+  const n=Math.min(+$('#pw-count').value||1,50),rows=[];
+  for(let i=0;i<n;i++){const p=genPass();if(p===null){setRows($('#pw-out'),[['提示','请至少勾选一类字符']]);return;}rows.push(p);}
+  setRows($('#pw-out'),rows);
+};
+const WORDS='time year people way day man thing woman life child world school state family student group country problem hand part place case week company system program question work government number night point home water room mother area money story fact month lot right study book eye job word business issue side kind head house service friend father power hour game line end member law car city community name president team minute idea body information back parent face level office door health person art war history party result change morning reason research girl guy moment air teacher force education'.split(' ');
+$('#ph-go').onclick=()=>{
+  const wc=+$('#ph-words').value,sep=$('#ph-sep').value,cap=$('#ph-cap').checked,num=$('#ph-num').checked,n=Math.min(+$('#ph-count').value||1,30);
+  const rows=[];
+  for(let i=0;i<n;i++){
+    let words=[];for(let j=0;j<wc;j++){let w=pick(WORDS);if(cap)w=w[0].toUpperCase()+w.slice(1);words.push(w);}
+    let s=words.join(sep);if(num)s+=sep+randInt(100);rows.push(s);
+  }
+  setRows($('#ph-out'),rows);
+};
+$('#pin-go').onclick=()=>{
+  const len=+$('#pin-len').value,n=Math.min(+$('#pin-count').value||1,50),rows=[];
+  for(let i=0;i<n;i++){let s='';for(let j=0;j<len;j++)s+=randInt(10);rows.push(s);}
+  setRows($('#pin-out'),rows);
+};
+showStrength();
+
+/* ================= 文本处理 ================= */
+function txStat(){
+  const v=$('#tx-in').value;
+  const words=(v.trim().match(/\S+/g)||[]).length;
+  const lines=v?v.split(/\r?\n/).length:0;
+  const bytes=encT.encode(v).length;
+  $('#tx-stat').innerHTML='字符 <b>'+v.length+'</b>　非空白 <b>'+v.replace(/\s/g,'').length+'</b>　词 <b>'+words+'</b>　行 <b>'+lines+'</b>　字节 <b>'+bytes+'</b>';
+}
+$('#tx-in').addEventListener('input',txStat);
+const titleCase=s=>s.replace(/\w\S*/g,t=>t[0].toUpperCase()+t.slice(1).toLowerCase());
+const words=s=>s.replace(/([a-z])([A-Z])/g,'$1 $2').split(/[\s_\-]+/).filter(Boolean);
+const TXOPS={
+  upper:s=>s.toUpperCase(),lower:s=>s.toLowerCase(),title:titleCase,
+  camel:s=>{const w=words(s);return w.map((x,i)=>i?x[0].toUpperCase()+x.slice(1).toLowerCase():x.toLowerCase()).join('');},
+  pascal:s=>words(s).map(x=>x[0].toUpperCase()+x.slice(1).toLowerCase()).join(''),
+  snake:s=>words(s).map(x=>x.toLowerCase()).join('_'),
+  kebab:s=>words(s).map(x=>x.toLowerCase()).join('-'),
+  const:s=>words(s).map(x=>x.toUpperCase()).join('_'),
+  slug:s=>s.toLowerCase().trim().replace(/[^\w\s-]/g,'').replace(/[\s_-]+/g,'-').replace(/^-+|-+$/g,''),
+  reverse:s=>[...s].reverse().join(''),
+  sortAsc:s=>s.split(/\r?\n/).sort((a,b)=>a.localeCompare(b)).join('\n'),
+  sortDesc:s=>s.split(/\r?\n/).sort((a,b)=>b.localeCompare(a)).join('\n'),
+  sortNum:s=>s.split(/\r?\n/).sort((a,b)=>parseFloat(a)-parseFloat(b)).join('\n'),
+  uniq:s=>[...new Set(s.split(/\r?\n/))].join('\n'),
+  revLines:s=>s.split(/\r?\n/).reverse().join('\n'),
+  shuffle:s=>{const a=s.split(/\r?\n/);for(let i=a.length-1;i>0;i--){const j=randInt(i+1);[a[i],a[j]]=[a[j],a[i]];}return a.join('\n');},
+  trim:s=>s.split(/\r?\n/).map(l=>l.trim()).join('\n'),
+  noEmpty:s=>s.split(/\r?\n/).filter(l=>l.trim()).join('\n'),
+  number:s=>s.split(/\r?\n/).map((l,i)=>(i+1)+'. '+l).join('\n')
+};
+$$('[data-tx]').forEach(b=>b.addEventListener('click',()=>{
+  const op=TXOPS[b.dataset.tx];if(op)$('#tx-out').value=op($('#tx-in').value);
+}));
+$('#tx-replace').onclick=()=>{
+  const f=$('#tx-find').value,r=$('#tx-repl').value,v=$('#tx-in').value;
+  try{
+    if($('#tx-re').checked){const re=new RegExp(f,$('#tx-gi').checked?'g':'');$('#tx-out').value=v.replace(re,r);}
+    else{$('#tx-out').value=$('#tx-gi').checked?v.split(f).join(r):v.replace(f,r);}
+  }catch(e){$('#tx-out').value='× 正则错误：'+e.message;}
+};
+txStat();
+
+/* ================= 正则测试 ================= */
+function reTest(){
+  const pat=$('#re-pat').value,flags=$('#re-flags').value,text=$('#re-text').value;
+  const hl=$('#re-hl');hl.textContent='';
+  if(!pat){$('#re-info').textContent='';$('#re-groups').textContent='';return;}
+  let re;try{re=new RegExp(pat,flags.includes('g')?flags:flags+'g');}
+  catch(e){$('#re-info').textContent='× 无效正则：'+e.message;hl.textContent='';$('#re-groups').textContent='';return;}
+  let last=0,count=0,groups=[];const frag=document.createDocumentFragment();let m;
+  re.lastIndex=0;let guard=0;
+  while((m=re.exec(text))!==null){
+    if(guard++>10000)break;
+    if(m.index>=last)frag.appendChild(document.createTextNode(text.slice(last,m.index)));
+    const mk=el('mark',null,m[0]);frag.appendChild(mk);
+    last=m.index+m[0].length;count++;
+    if(m.length>1)groups.push(['匹配 '+count,m.slice(1).map((g,i)=>'$'+(i+1)+'='+g).join('  ')]);
+    if(m[0]===''){re.lastIndex++;} // 防空匹配死循环
+  }
+  frag.appendChild(document.createTextNode(text.slice(last)));
+  hl.appendChild(frag);
+  $('#re-info').textContent='匹配 '+count+' 处';
+  setRows($('#re-groups'),groups);
+}
+['re-pat','re-flags','re-text'].forEach(id=>$('#'+id).addEventListener('input',reTest));
+
+/* ================= JSON / 数据 ================= */
+function jsInfo(t,c){$('#js-info').textContent=t;$('#js-info').style.color=c||'var(--muted)';}
+function sortKeys(o){if(Array.isArray(o))return o.map(sortKeys);if(o&&typeof o==='object')return Object.keys(o).sort().reduce((a,k)=>{a[k]=sortKeys(o[k]);return a;},{});return o;}
+$('#js-format').onclick=()=>{try{const o=JSON.parse($('#js-in').value);$('#js-out').value=JSON.stringify(o,null,2);jsInfo('✓ 有效 JSON','var(--c-green)');}catch(e){jsInfo('× '+e.message,'var(--c-red)');}};
+$('#js-min').onclick=()=>{try{$('#js-out').value=JSON.stringify(JSON.parse($('#js-in').value));jsInfo('✓ 已压缩','var(--c-green)');}catch(e){jsInfo('× '+e.message,'var(--c-red)');}};
+$('#js-sort').onclick=()=>{try{$('#js-out').value=JSON.stringify(sortKeys(JSON.parse($('#js-in').value)),null,2);jsInfo('✓ 键已排序','var(--c-green)');}catch(e){jsInfo('× '+e.message,'var(--c-red)');}};
+$('#js-esc').onclick=()=>{$('#js-out').value=JSON.stringify($('#js-in').value);jsInfo('已转义为 JSON 字符串');};
+$('#js-unesc').onclick=()=>{try{$('#js-out').value=JSON.parse($('#js-in').value);jsInfo('已反转义');}catch(e){jsInfo('× '+e.message,'var(--c-red)');}};
+$('#js-q2j').onclick=()=>{try{const p=new URLSearchParams($('#js-in').value.replace(/^\?/,''));const o={};for(const[k,v]of p)o[k]=v;$('#js-out').value=JSON.stringify(o,null,2);jsInfo('✓ Query → JSON','var(--c-green)');}catch(e){jsInfo('× '+e.message,'var(--c-red)');}};
+$('#js-j2q').onclick=()=>{try{const o=JSON.parse($('#js-in').value);$('#js-out').value=new URLSearchParams(o).toString();jsInfo('✓ JSON → Query','var(--c-green)');}catch(e){jsInfo('× '+e.message,'var(--c-red)');}};
+
+/* ================= 颜色 ================= */
+function parseColor(str){
+  str=str.trim();
+  let m;
+  if(m=str.match(/^#?([0-9a-fA-F]{3})$/)){const h=m[1];return [parseInt(h[0]+h[0],16),parseInt(h[1]+h[1],16),parseInt(h[2]+h[2],16),1];}
+  if(m=str.match(/^#?([0-9a-fA-F]{6})$/)){const h=m[1];return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16),1];}
+  if(m=str.match(/rgba?\(([^)]+)\)/)){const p=m[1].split(',').map(x=>parseFloat(x));return [p[0],p[1],p[2],p[3]==null?1:p[3]];}
+  // 命名颜色：借助浏览器
+  const d=el('div');d.style.color=str;document.body.appendChild(d);const cs=getComputedStyle(d).color;document.body.removeChild(d);
+  if(m=cs.match(/rgba?\(([^)]+)\)/)){const p=m[1].split(',').map(x=>parseFloat(x));return [p[0],p[1],p[2],p[3]==null?1:p[3]];}
+  return null;
+}
+function rgb2hsl(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let h,s,l=(mx+mn)/2;if(mx===mn){h=s=0;}else{const d=mx-mn;s=l>0.5?d/(2-mx-mn):d/(mx+mn);switch(mx){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;default:h=(r-g)/d+4;}h/=6;}return [Math.round(h*360),Math.round(s*100),Math.round(l*100)];}
+function rgb2hsv(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let h=0;if(d){switch(mx){case r:h=((g-b)/d)%6;break;case g:h=(b-r)/d+2;break;default:h=(r-g)/d+4;}h*=60;if(h<0)h+=360;}return [Math.round(h),Math.round((mx?d/mx:0)*100),Math.round(mx*100)];}
+function colConvert(str){
+  const c=parseColor(str);
+  if(!c){setRows($('#col-out'),[['错误','× 无法解析该颜色']]);$('#col-sw').style.background='';return;}
+  const [r,g,b,a]=c;const hex='#'+[r,g,b].map(x=>Math.round(x).toString(16).padStart(2,'0')).join('');
+  const [h,s,l]=rgb2hsl(r,g,b),[hh,ss,vv]=rgb2hsv(r,g,b);
+  $('#col-sw').style.background=`rgba(${r},${g},${b},${a})`;
+  if(/^#[0-9a-f]{6}$/i.test(hex))$('#col-pick').value=hex;
+  setRows($('#col-out'),[['HEX',hex],['HEX8',hex+Math.round(a*255).toString(16).padStart(2,'0')],['RGB',`rgb(${r}, ${g}, ${b})`],['RGBA',`rgba(${r}, ${g}, ${b}, ${a})`],['HSL',`hsl(${h}, ${s}%, ${l}%)`],['HSV',`hsv(${hh}, ${ss}%, ${vv}%)`]]);
+}
+$('#col-go').onclick=()=>colConvert($('#col-in').value);
+$('#col-pick').addEventListener('input',e=>{$('#col-in').value=e.target.value;colConvert(e.target.value);});
+colConvert('#6d5efc');
+
+/* ================= 网络 ================= */
+function ip2int(ip){const p=ip.split('.').map(Number);if(p.length!==4||p.some(x=>isNaN(x)||x<0||x>255))return null;return ((p[0]<<24)>>>0)+(p[1]<<16)+(p[2]<<8)+p[3];}
+function int2ip(n){n=n>>>0;return [(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255].join('.');}
+$('#cidr-go').onclick=()=>{
+  const v=$('#cidr-in').value.trim(),m=v.match(/^(\d+\.\d+\.\d+\.\d+)\/(\d+)$/);
+  if(!m){setRows($('#cidr-out'),[['错误','× 格式应为 192.168.1.0/24']]);return;}
+  const base=ip2int(m[1]),bits=+m[2];
+  if(base===null||bits<0||bits>32){setRows($('#cidr-out'),[['错误','× IP 或掩码非法']]);return;}
+  const mask=bits===0?0:(0xFFFFFFFF<<(32-bits))>>>0;
+  const net=(base&mask)>>>0,bc=(net|(~mask>>>0))>>>0;
+  const total=Math.pow(2,32-bits);
+  const usable=bits>=31?total:total-2;
+  const first=bits>=31?net:(net+1)>>>0,lastH=bits>=31?bc:(bc-1)>>>0;
+  setRows($('#cidr-out'),[['网络地址',int2ip(net)],['广播地址',int2ip(bc)],['子网掩码',int2ip(mask)],['反掩码',int2ip(~mask>>>0)],['可用范围',int2ip(first)+' – '+int2ip(lastH)],['地址总数',total.toLocaleString()],['可用主机',usable.toLocaleString()],['CIDR',int2ip(net)+'/'+bits]]);
+};
+$('#ii-2int').onclick=()=>{const n=ip2int($('#ii-in').value.trim());setRows($('#ii-out'),n===null?[['错误','× 非法 IPv4']]:[['整数',String(n)],['十六进制','0x'+n.toString(16)],['二进制',n.toString(2).padStart(32,'0')]]);};
+$('#ii-2ip').onclick=()=>{const n=parseInt($('#ii-in').value.trim());if(isNaN(n)||n<0||n>4294967295){setRows($('#ii-out'),[['错误','× 范围应为 0–4294967295']]);return;}setRows($('#ii-out'),[['IPv4',int2ip(n)]]);};
+$('#url-go').onclick=()=>{
+  try{
+    const u=new URL($('#url-in').value.trim());
+    const rows=[['协议',u.protocol],['主机名',u.hostname],['端口',u.port||'(默认)'],['路径',u.pathname],['查询串',u.search||'(无)'],['锚点',u.hash||'(无)']];
+    if(u.username)rows.push(['用户',u.username]);
+    for(const[k,val]of u.searchParams)rows.push(['参数 '+k,val]);
+    setRows($('#url-out'),rows);
+  }catch(e){setRows($('#url-out'),[['错误','× 无效 URL']]);}
+};
+$('#ua-me').onclick=()=>$('#ua-in').value=navigator.userAgent;
+$('#ua-go').onclick=()=>{
+  const ua=$('#ua-in').value;
+  let browser='未知',os='未知',engine='未知';
+  if(/Edg\//.test(ua))browser='Edge';else if(/OPR\/|Opera/.test(ua))browser='Opera';else if(/Chrome\//.test(ua))browser='Chrome';else if(/Firefox\//.test(ua))browser='Firefox';else if(/Safari\//.test(ua))browser='Safari';
+  const bv=ua.match(/(Edg|OPR|Chrome|Firefox|Version)\/([\d.]+)/);if(bv)browser+=' '+bv[2];
+  if(/Windows NT 10/.test(ua))os='Windows 10/11';else if(/Windows/.test(ua))os='Windows';else if(/Mac OS X/.test(ua))os='macOS';else if(/Android/.test(ua))os='Android';else if(/iPhone|iPad/.test(ua))os='iOS';else if(/Linux/.test(ua))os='Linux';
+  if(/Gecko\//.test(ua)&&/Firefox/.test(ua))engine='Gecko';else if(/AppleWebKit/.test(ua))engine='WebKit/Blink';
+  setRows($('#ua-out'),[['浏览器',browser],['操作系统',os],['引擎',engine],['移动端',/Mobile/.test(ua)?'是':'否']]);
+};
+
+/* ================= 时间戳 ================= */
+function tsRows(ms){
+  const d=new Date(ms);
+  return [['Unix 秒',String(Math.floor(ms/1000))],['Unix 毫秒',String(ms)],['本地时间',d.toLocaleString()],['ISO 8601',d.toISOString()],['UTC',d.toUTCString()],['星期',['周日','周一','周二','周三','周四','周五','周六'][d.getDay()]]];
+}
+$('#ts-parse').onclick=()=>{
+  const v=$('#ts-in').value.trim();let ms;
+  if(/^\d+$/.test(v)){ms=v.length>10?+v:v*1000;}else{const d=new Date(v);if(isNaN(d)){setRows($('#ts-out'),[['错误','× 无法解析']]);return;}ms=d.getTime();}
+  setRows($('#ts-out'),tsRows(ms));
+};
+$('#ts-now').onclick=()=>{$('#ts-in').value=Math.floor(Date.now()/1000);setRows($('#ts-out'),tsRows(Date.now()));};
+setInterval(()=>{const p=$('.ut-pane[data-pane="time"]');if(p&&!p.classList.contains('hidden'))$('#ts-live').textContent='当前：'+Math.floor(Date.now()/1000)+' 秒 · '+new Date().toLocaleString();},1000);
+
+/* ================= 生成器 ================= */
+$('#uuid-go').onclick=()=>{const n=Math.min(+$('#uuid-n').value||1,50),r=[];for(let i=0;i<n;i++)r.push(crypto.randomUUID());setRows($('#uuid-out'),r);};
+$('#nano-go').onclick=()=>{
+  const len=+$('#nano-len').value,alpha=$('#nano-alpha').value||'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',n=Math.min(+$('#nano-n').value||1,50),r=[];
+  for(let i=0;i<n;i++){let s='';const a=crypto.getRandomValues(new Uint32Array(len));for(let j=0;j<len;j++)s+=alpha[a[j]%alpha.length];r.push(s);}
+  setRows($('#nano-out'),r);
+};
+const LOREM='lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua enim ad minim veniam quis nostrud exercitation ullamco laboris nisi aliquip ex ea commodo consequat duis aute irure in reprehenderit voluptate velit esse cillum eu fugiat nulla pariatur excepteur sint occaecat cupidatat non proident sunt culpa qui officia deserunt mollit anim id est laborum'.split(' ');
+function loremWords(n){let r=[];for(let i=0;i<n;i++)r.push(LOREM[randInt(LOREM.length)]);return r.join(' ');}
+function loremSent(){const n=6+randInt(10);let s=loremWords(n);return s[0].toUpperCase()+s.slice(1)+'.';}
+$('#lorem-go').onclick=()=>{
+  const u=$('#lorem-unit').value,n=+$('#lorem-n').value;let out='';
+  if(u==='w')out=loremWords(n);
+  else if(u==='s'){const a=[];for(let i=0;i<n;i++)a.push(loremSent());out=a.join(' ');}
+  else{const a=[];for(let i=0;i<n;i++){const sc=3+randInt(4);const s=[];for(let j=0;j<sc;j++)s.push(loremSent());a.push(s.join(' '));}out=a.join('\n\n');}
+  $('#lorem-out').value=out;
+};
+$('#rn-go').onclick=()=>{
+  let mn=+$('#rn-min').value,mx=+$('#rn-max').value,n=Math.min(+$('#rn-n').value||1,200);
+  if(mn>mx)[mn,mx]=[mx,mn];const span=mx-mn+1,r=[];
+  for(let i=0;i<n;i++)r.push(mn+randInt(span));
+  $('#rn-out').value=r.join(', ');
+};
+
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% from '_pagination.html' import pager %}
+{% block title %}审计日志 · Aegis{% endblock %}
+{% block content %}
+{% set cat_meta = {
+  'auth':    {'label':'认证', 'c':'--c-blue'},
+  'admin':   {'label':'管理', 'c':'--c-purple'},
+  'tool':    {'label':'工具', 'c':'--c-cyan'},
+  'security':{'label':'安全', 'c':'--c-red'}
+} %}
+{% set act = {
+  'login_success':'登录成功','login_failed':'登录失败','login_2fa_ok':'2FA 通过',
+  'login_2fa_fail':'2FA 失败','logout':'登出','create_user':'创建用户',
+  'adjust_credits':'调整积分','toggle_user':'启用/禁用用户','review_permission':'审批权限',
+  'grant_permission':'直接授权','permission_requested':'申请权限','apikey_set':'设置 API Key',
+  'tool_update':'工具设置','osint_query':'OSINT 查询','osint_export':'OSINT 导出',
+  'hash_lookup':'Hash 查询','hash_export':'Hash 导出','vault_create':'新增凭证',
+  'vault_reveal':'查看凭证','vault_delete':'删除凭证','vault_export':'导出凭证',
+  'nav_add':'新增导航','nav_delete':'删除导航','nav_import':'导入书签',
+  'download_upload':'上传文件','download_get':'下载文件','download_rename':'重命名',
+  'download_delete':'删除文件','browser_connect':'接入云浏览器','browser_restart':'重启云浏览器',
+  'totp_enable':'开启 2FA','totp_disable':'关闭 2FA','device_revoke':'撤销可信设备'
+} %}
+
+<div class="topbar">
+  <div class="page-head"><h1>审计日志</h1></div>
+  <span style="color:var(--muted);font-size:13px">共 <b style="color:var(--text)">{{ pg.total }}</b> 条</span>
+</div>
+
+<div class="filters">
+  {% set total = counts.values()|sum %}
+  <a href="{{ url_for('admin.audit_logs') }}" class="chip {{ 'active' if not category }}">全部 <b>{{ total }}</b></a>
+  {% for key, meta in cat_meta.items() %}
+  <a href="{{ url_for('admin.audit_logs', category=key) }}" class="chip {{ 'active' if category == key }}">
+    {{ meta.label }} <b>{{ counts.get(key, 0) }}</b></a>
+  {% endfor %}
+</div>
+
+<div class="panel" style="margin-top:4px;padding:6px 4px">
+  {% if pg.items %}
+  <table class="data-table audit-table">
+    <thead><tr><th>时间</th><th>用户</th><th>类型</th><th>动作</th><th>详情</th><th>IP</th></tr></thead>
+    <tbody>
+    {% for log in pg.items %}
+      {% set uname = umap.get(log.user_id) %}
+      {% set meta = cat_meta.get(log.category, {'label':log.category,'c':'--brand'}) %}
+      <tr>
+        <td style="white-space:nowrap"><span style="color:var(--dim)">{{ log.created_at.strftime('%m-%d') }}</span> {{ log.created_at.strftime('%H:%M:%S') }}</td>
+        <td>{% if uname %}<span class="au-user">{{ uname }}</span>{% else %}<span style="color:var(--dim)">系统</span>{% endif %}</td>
+        <td><span class="badge" style="color:var({{ meta.c }});background:color-mix(in srgb, var({{ meta.c }}) 15%, transparent)">{{ meta.label }}</span></td>
+        <td style="font-weight:500">{{ act.get(log.action, log.action) }}</td>
+        <td>
+          {% set d = log.detail|fromjson %}
+          {% if d %}
+            {% for k, v in d.items() %}<span class="kv"><i>{{ k }}</i>{{ v }}</span>{% endfor %}
+          {% else %}<span style="color:var(--dim)">—</span>{% endif %}
+        </td>
+        <td style="color:var(--muted);font-family:ui-monospace,monospace;font-size:12px">{{ log.ip or '—' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-hint" style="margin:12px">该分类下暂无审计记录。</div>
+  {% endif %}
+</div>
+{{ pager(pg, 'admin.audit_logs', {'category': category} if category else {}) }}
+{% endblock %}
+
+{% block scripts %}
+<style>
+.audit-table td { vertical-align: middle; }
+.au-user { padding: 2px 9px; border-radius: 7px; background: var(--inset); font-size: 12.5px; }
+.kv { display: inline-flex; align-items: center; gap: 5px; margin: 2px 6px 2px 0; padding: 2px 8px;
+  border-radius: 7px; background: var(--inset); font-size: 12px; color: var(--text); max-width: 320px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kv i { color: var(--dim); font-style: normal; }
+.filters .chip b { color: inherit; opacity: .7; font-weight: 600; }
+</style>
+{% endblock %}

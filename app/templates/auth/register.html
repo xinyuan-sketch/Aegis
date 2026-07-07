@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}注册 · {{ site_name or 'Aegis' }}{% endblock %}
+{% block content_full %}
+<div class="login-wrap">
+  <form class="login-card" method="post" action="{{ url_for('auth.register') }}">
+    <div class="login-logo">A</div>
+    <h1>注册 {{ site_name or 'Aegis' }}</h1>
+    <p class="sub">
+      {% if mode == 'off' %}注册当前已关闭
+      {% elif mode == 'approval' %}注册后需管理员审批激活
+      {% elif mode == 'invite' %}需邀请码注册
+      {% else %}创建你的账号{% endif %}
+    </p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}<div class="flash flash-{{ cat }}">{{ msg }}</div>{% endfor %}
+    {% endwith %}
+
+    {% if mode == 'off' %}
+    <div class="flash flash-error">管理员已关闭自助注册，请联系管理员开通账号。</div>
+    <a href="{{ url_for('auth.login') }}" class="login-links" style="justify-content:center">← 返回登录</a>
+    {% else %}
+    <input name="username" placeholder="用户名（3–32 位，字母/数字/下划线）" autofocus required>
+    <input name="password" type="password" placeholder="密码（至少 6 位）" required>
+    <input name="password2" type="password" placeholder="确认密码" required>
+    {% if mode == 'invite' %}
+    <input name="invite" placeholder="邀请码" autocomplete="off" required>
+    {% endif %}
+    {% if captcha_on %}
+    <div class="cap-row">
+      <input name="captcha" placeholder="验证码" autocomplete="off" maxlength="4" required>
+      <img class="cap-img" src="{{ url_for('auth.captcha_img') }}" title="点击刷新"
+           onclick="this.src='{{ url_for('auth.captcha_img') }}?t='+Date.now()">
+    </div>
+    {% endif %}
+    <button type="submit">注 册</button>
+    <div class="login-links">
+      <a href="{{ url_for('auth.login') }}">已有账号？登录</a>
+    </div>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}

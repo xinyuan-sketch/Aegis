@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}{{ '编辑' if snippet else '新建' }}片段 · {{ site_name or 'Aegis' }}{% endblock %}
+{% block content %}
+<div class="topbar">
+  <div class="page-head"><h1>{{ '编辑片段' if snippet else '新建片段' }}</h1></div>
+  <a href="{{ url_for('snippets.index') }}" class="stat-sub">← 返回列表</a>
+</div>
+
+<form method="post" class="panel" action="{{ url_for('snippets.edit', sid=snippet.id) if snippet else url_for('snippets.new') }}">
+  <div class="grid grid-2">
+    <div><label class="card-label">标题</label><input name="title" value="{{ snippet.title if snippet else '' }}" placeholder="片段名称" required></div>
+    <div><label class="card-label">语言</label>
+      <select name="language">
+        {% for l in languages %}<option value="{{ l }}" {{ 'selected' if snippet and snippet.language == l }}>{{ l }}</option>{% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <label class="card-label" style="margin-top:12px">内容</label>
+  <textarea name="body" rows="12" placeholder="粘贴命令 / payload / 代码…" style="font-family:ui-monospace,monospace;font-size:13px" required>{{ snippet.body if snippet else '' }}</textarea>
+
+  <div class="grid grid-2" style="margin-top:12px">
+    <div><label class="card-label">标签（逗号分隔）</label><input name="tags" value="{{ snippet.tags if snippet else '' }}" placeholder="如：提权, linux"></div>
+    <div><label class="card-label">可见性</label>
+      <select name="visibility">
+        <option value="private" {{ 'selected' if not snippet or snippet.visibility == 'private' }}>私密（仅自己）</option>
+        <option value="public" {{ 'selected' if snippet and snippet.visibility == 'public' }}>团队共享</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-top:16px">
+    <button type="submit">保存</button>
+    <a class="btn ghost" href="{{ url_for('snippets.index') }}">取消</a>
+  </div>
+</form>
+{% endblock %}

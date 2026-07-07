@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from '_pagination.html' import pager %}
+{% block title %}用户管理 · Aegis{% endblock %}
+{% block content %}
+<div class="page-head"><h1>用户管理</h1></div>
+
+<form method="post" action="{{ url_for('admin.create_user') }}" class="inline-form">
+  <input name="username" placeholder="用户名" required>
+  <input name="password" type="password" placeholder="初始密码" required>
+  <select name="role"><option value="user">普通用户</option><option value="admin">管理员</option></select>
+  <button type="submit">创建用户</button>
+</form>
+
+<table class="data-table">
+  <thead><tr><th>ID</th><th>用户名</th><th>角色</th><th>积分</th><th>状态</th><th>最近登录</th><th>操作</th></tr></thead>
+  <tbody>
+  {% for u in users %}
+    <tr>
+      <td>{{ u.id }}</td>
+      <td>{{ u.username }}</td>
+      <td>{{ '管理员' if u.is_admin else '用户' }}</td>
+      <td>{{ u.credits }}</td>
+      <td>{{ '启用' if u.is_active else '禁用' }}</td>
+      <td>{{ u.last_login_at.strftime('%m-%d %H:%M') if u.last_login_at else '–' }}</td>
+      <td class="ops">
+        <form method="post" action="{{ url_for('admin.adjust_credits', user_id=u.id) }}">
+          <input name="amount" type="number" value="10" style="width:60px">
+          <button type="submit">调分</button>
+        </form>
+        <form method="post" action="{{ url_for('admin.toggle_user', user_id=u.id) }}">
+          <button type="submit">{{ '禁用' if u.is_active else '启用' }}</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{{ pager(pg, 'admin.users') }}
+{% endblock %}

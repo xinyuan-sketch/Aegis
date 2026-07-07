@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}权限申请 · Aegis{% endblock %}
+{% block content %}
+<div class="page-head"><h1>申请工具权限</h1></div>
+<form method="post" action="{{ url_for('dashboard.request_permission') }}" class="form-card">
+  <input type="hidden" name="tool_key" value="{{ tool_key }}">
+  <label>工具</label>
+  <div class="readonly">{{ tool.name if tool else tool_key }}</div>
+  <label>申请理由</label>
+  <textarea name="reason" rows="4" placeholder="说明使用场景，便于管理员审批"></textarea>
+  <button type="submit">提交申请</button>
+</form>
+{% endblock %}

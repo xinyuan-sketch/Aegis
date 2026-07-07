@@ -1,0 +1,19 @@
+{# 可复用分页组件。用法：{% from '_pagination.html' import pager %}{{ pager(pg, 'admin.users') }}
+   pg 为 Flask-SQLAlchemy 分页对象；args 传额外查询参数（如 {'category': category}）。#}
+{% macro pager(p, endpoint, args={}) -%}
+{% if p and p.pages and p.pages > 1 %}
+<div class="pager">
+  {% if p.has_prev %}<a class="pg" href="{{ url_for(endpoint, page=p.prev_num, **args) }}">‹</a>
+  {% else %}<span class="pg disabled">‹</span>{% endif %}
+  {% for n in p.iter_pages(left_edge=1, left_current=1, right_current=2, right_edge=1) %}
+    {% if n %}
+      {% if n == p.page %}<span class="pg active">{{ n }}</span>
+      {% else %}<a class="pg" href="{{ url_for(endpoint, page=n, **args) }}">{{ n }}</a>{% endif %}
+    {% else %}<span class="pg-gap">…</span>{% endif %}
+  {% endfor %}
+  {% if p.has_next %}<a class="pg" href="{{ url_for(endpoint, page=p.next_num, **args) }}">›</a>
+  {% else %}<span class="pg disabled">›</span>{% endif %}
+  <span class="pg-info">共 {{ p.total }} 条 · 第 {{ p.page }}/{{ p.pages }} 页</span>
+</div>
+{% endif %}
+{%- endmacro %}
