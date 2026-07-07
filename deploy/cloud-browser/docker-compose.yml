@@ -1,0 +1,18 @@
+services:
+  cloud-browser:
+    build: .
+    container_name: aegis-cloud-browser
+    restart: unless-stopped
+    environment:
+      # 远程桌面分辨率（宽屏，减少 iframe 两侧黑边）。改这里后 down/up 生效。
+      - RES=1920x1080x24
+    # shm 太小 Chrome 会崩，给足共享内存
+    shm_size: "1gb"
+    ports:
+      # 仅绑定本机，由 Aegis 的 Nginx 反代 /novnc 对外，避免 6080 直接暴露
+      - "127.0.0.1:6080:6080"
+    # 资源上限（按需调整）
+    deploy:
+      resources:
+        limits:
+          memory: 2g

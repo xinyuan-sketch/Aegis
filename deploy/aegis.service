@@ -1,0 +1,16 @@
+[Unit]
+Description=Aegis
+After=network.target
+
+[Service]
+Type=simple
+User=aegis
+WorkingDirectory=/opt/aegis
+# 敏感环境变量（AEGIS_SECRET_KEY / AEGIS_MASTER_KEY 等）放此文件，权限 600
+EnvironmentFile=/opt/aegis/.env
+ExecStart=/opt/aegis/venv/bin/gunicorn -c deploy/gunicorn.conf.py wsgi:app
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
