@@ -1,0 +1,12 @@
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+SQLAlchemy==2.0.31
+Werkzeug==3.0.3
+cryptography==42.0.8
+python-dotenv==1.0.1
+psutil==5.9.8
+requests==2.32.3
+pyotp==2.9.0
+qrcode==7.4.2
+gunicorn==22.0.0
